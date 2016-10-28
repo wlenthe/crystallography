@@ -75,6 +75,7 @@ class OimScan:
 		scan.xStep = resolution[0]
 		scan.yStep = resolution[1]
 		scan.allocate()
+		scan.ci.fill(-1)
 		singleRow = numpy.linspace(0, scan.xStep * (scan.colsOdd-1), scan.colsOdd) + origin[0]
 		for j in range(scan.rows):
 		  scan.x[j] = singleRow
@@ -106,77 +107,74 @@ class OimScan:
 		self.y = numpy.zeros((self.rows, maxCols))
 		self.iq = numpy.zeros((self.rows, maxCols))
 		self.ci = numpy.zeros((self.rows, maxCols))
-		self.ci.fill(-1)
 		self.phase = numpy.zeros((self.rows, maxCols), dtype = 'int')
 		self.sem = numpy.zeros((self.rows, maxCols)) if sem else None
 		self.fit = numpy.zeros((self.rows, maxCols)) if fit else None
 
 	def writeAng(self, filename):
 		with open(filename, 'w') as file:
-			# write header
-			file.write('# TEM_PIXperUM 1.000000\n')
-			file.write('# x-star ' + str(self.xstar) + '\n')
-			file.write('# y-star ' + str(self.ystar) + '\n')
-			file.write('# z-star ' + str(self.zstar) + '\n')
-			file.write('# WorkingDistance ' + str(self.workingDistance) + '\n')
-			file.write('#\n')
+			# compose header
+			header = '# TEM_PIXperUM 1.000000\n'
+			header += ('# TEM_PIXperUM 1.000000\n')
+			header += ('# x-star ' + str(self.xstar) + '\n')
+			header += ('# y-star ' + str(self.ystar) + '\n')
+			header += ('# z-star ' + str(self.zstar) + '\n')
+			header += ('# WorkingDistance ' + str(self.workingDistance) + '\n')
+			header += ('#\n')
 			for phase in self.phaseList:
-				file.write('# Phase ' + str(phase.number) + '\n')
-				file.write('# MaterialName ' + phase.materialName + '\n')
-				file.write('# Formula ' + phase.formula + '\n')
-				file.write('# Info ' + phase.info + '\n')
-				file.write('# Symmetry ' + str(phase.symmetry) + '\n')
+				header += ('# Phase ' + str(phase.number) + '\n')
+				header += ('# MaterialName ' + phase.materialName + '\n')
+				header += ('# Formula ' + phase.formula + '\n')
+				header += ('# Info ' + phase.info + '\n')
+				header += ('# Symmetry ' + str(phase.symmetry) + '\n')
 				constants = str(phase.latticeConstants[0]) + ' ' + str(phase.latticeConstants[1]) + ' ' + str(phase.latticeConstants[2]) + ' ' + str(phase.latticeConstants[3]) + ' ' + str(phase.latticeConstants[4]) + ' ' + str(phase.latticeConstants[5])
-				file.write('# LatticeConstants ' + constants + '\n')
-				file.write('# NumberFamilies ' + str(len(phase.hklFamilies)) + '\n')
+				header += ('# LatticeConstants ' + constants + '\n')
+				header += ('# NumberFamilies ' + str(len(phase.hklFamilies)) + '\n')
 				for family in phase.hklFamilies:
-					file.write('# hklFamilies ' + str(family.hkl[0]) + ' ' + str(family.hkl[1]) + ' ' + str(family.hkl[2]) + ' ')
-					file.write(str(family.useInIndexing) + ' ' + str(family.diffractionIntensity) + ' ' + str(family.showBands) + '\n')
+					header += ('# hklFamilies ' + str(family.hkl[0]) + ' ' + str(family.hkl[1]) + ' ' + str(family.hkl[2]) + ' ')
+					header += (str(family.useInIndexing) + ' ' + str(family.diffractionIntensity) + ' ' + str(family.showBands) + '\n')
 				for line in phase.elasticConstants:
 					constants = str(line[0]) + ' ' + str(line[1]) + ' ' + str(line[2]) + ' ' + str(line[3]) + ' ' + str(line[4]) + ' ' + str(line[5])
-					file.write('# ElasticConstants ' + constants + '\n')
-				file.write('# Categories')
+					header += ('# ElasticConstants ' + constants + '\n')
+				header += ('# Categories')
 				for category in phase.categories:
-					file.write(' ' + str(category))
-				file.write('\n#\n')
-			file.write('# GRID: ' + self.gridType.value + '\n')
-			file.write('# XSTEP: ' + str(self.xStep) + '\n')
-			file.write('# YSTEP: ' + str(self.yStep) + '\n')
-			file.write('# NCOLS_ODD: ' + str(self.colsOdd) + '\n')
-			file.write('# NCOLS_EVEN: ' + str(self.colsEven) + '\n')
-			file.write('# NROWS: ' + str(self.rows) + '\n')
-			file.write('#\n')
-			file.write('# OPERATOR: ' + self.operator + '\n')
-			file.write('# SAMPLEID: ' + self.sampleId + '\n')
-			file.write('# SCANID: ' + self.scanId + '\n')
-			file.write('#\n')
+					header += (' ' + str(category))
+				header += ('\n#\n')
+			header += ('# GRID: ' + self.gridType.value + '\n')
+			header += ('# XSTEP: ' + str(self.xStep) + '\n')
+			header += ('# YSTEP: ' + str(self.yStep) + '\n')
+			header += ('# NCOLS_ODD: ' + str(self.colsOdd) + '\n')
+			header += ('# NCOLS_EVEN: ' + str(self.colsEven) + '\n')
+			header += ('# NROWS: ' + str(self.rows) + '\n')
+			header += ('#\n')
+			header += ('# OPERATOR: ' + self.operator + '\n')
+			header += ('# SAMPLEID: ' + self.sampleId + '\n')
+			header += ('# SCANID: ' + self.scanId + '\n')
+			header += ('#\n')
+			file.write(header)
 
 			# write body
-			oddRow = True
-			for j in range(self.rows):
-				for i in range(self.colsOdd if oddRow else self.colsEven):
-					file.write(str(self.euler[j,i,0]))
-					file.write(' ')
-					file.write(str(self.euler[j,i,1]))
-					file.write(' ')
-					file.write(str(self.euler[j,i,2]))
-					file.write(' ')
-					file.write(str(self.x[j,i]))
-					file.write(' ')
-					file.write(str(self.y[j,i]))
-					file.write(' ')
-					file.write(str(self.iq[j,i]))
-					file.write(' ')
-					file.write(str(self.ci[j,i]))
-					file.write(' ')
-					file.write(str(self.phase[j,i]))
-					if self.sem is not None:
-						file.write(' ')
-						file.write(str(self.sem[j,i]))
-					if self.fit is not None:
-						file.write(' ')
-						file.write(str(self.fit[j,i]))
-					file.write('\n')
+			if self.sem is not None and self.fit is not None:
+				stackedData = numpy.stack((self.euler[:,:,0], self.euler[:,:,1], self.euler[:,:,2], self.x, self.y, self.iq, self.ci, self.phase, self.sem, self.fit))
+			elif self.sem is not None:
+				stackedData = numpy.stack((self.euler[:,:,0], self.euler[:,:,1], self.euler[:,:,2], self.x, self.y, self.iq, self.ci, self.phase, self.sem))
+			elif self.fit is not None:
+				stackedData = numpy.stack((self.euler[:,:,0], self.euler[:,:,1], self.euler[:,:,2], self.x, self.y, self.iq, self.ci, self.phase, self.fit))
+			else:
+				stackedData = numpy.stack((self.euler[:,:,0], self.euler[:,:,1], self.euler[:,:,2], self.x, self.y, self.iq, self.ci, self.phase))
+			
+			if self.gridType is Grid.Square:
+				stackedData = numpy.reshape(stackedData, (stackedData.shape[0], stackedData.shape[1] * stackedData.shape[2])).T
+				file.write('\n'.join(map(lambda line: ' '.join(map(str, line)), stackedData)))
+
+			else:
+				oddRow = True
+				for j in range(self.rows):
+					for i in range(self.colsOdd if oddRow else self.colsEven):
+						tokens = stackedData[:,j,i]
+						file.write(' '.join([str(item) for item in stackedData[:,j,i]]))
+						file.write('\n')
+					oddRow = not oddRow
 
 	def readAng(self, filename):
 		with open(filename, newline = '') as file:
@@ -267,32 +265,64 @@ class OimScan:
 							self.scanId = tokens[2]
 
 			# parse body lines: eu1, eu2, eu3, x, y, iq, ci, phase, sem, fit
-			row = 0
-			col = 0
-			oddRow = True
-			self.allocate(len(tokens) > 12, len(tokens) > 13)
-			for line in file:
-				tokens = re.split('\s+', line.strip())
-				self.euler[row, col, 0] = float(tokens[0])
-				self.euler[row, col, 1] = float(tokens[1])
-				self.euler[row, col, 2] = float(tokens[2])
-				self.x[row, col] = float(tokens[3])
-				self.y[row, col] = float(tokens[4])
-				self.iq[row, col] = float(tokens[5])
-				self.ci[row, col] = float(tokens[6])
-				self.phase[row, col] = int(tokens[7])
-				if self.sem is not None:
-					self.sem[row, col] = float(tokens[8])
-				if self.fit is not None:
-					self.fit[row, col] = float(tokens[9])
-				col += 1
-				if col == (self.colsOdd if oddRow else self.colsEven):
-					col = 0
-					row += 1
-					oddRow = not oddRow
+			if self.gridType is Grid.Square:
+				points = 0
+				cols = max(self.colsOdd, self.colsEven)
+				data = numpy.zeros((cols * self.rows, len(tokens)))
+				for line in file:
+					data[points] = numpy.fromstring(line, sep = ' ')
+					points += 1
+				self.euler = numpy.zeros((self.rows, cols, 3))
+				self.euler[:,:,0] = numpy.reshape(data[:,0], (self.rows, cols))
+				self.euler[:,:,1] = numpy.reshape(data[:,1], (self.rows, cols))
+				self.euler[:,:,2] = numpy.reshape(data[:,2], (self.rows, cols))
+				self.x = numpy.reshape(data[:,3], (self.rows, cols))
+				self.y = numpy.reshape(data[:,4], (self.rows, cols))
+				self.iq = numpy.reshape(data[:,5], (self.rows, cols))
+				self.ci = numpy.reshape(data[:,6], (self.rows, cols))
+				self.phase = numpy.reshape(data[:,7], (self.rows, cols)).astype('int')
+				if len(tokens) > 12:
+					self.sem = numpy.reshape(data[:,8], (self.rows, cols))
+				else:
+					self.sem = None
+				if len(tokens) > 13:	
+					self.fit = numpy.reshape(data[:,9], (self.rows, cols))
+				else:
+					self.fit = None
+				complete = points == cols * self.rows
+
+			else:
+				row = 0
+				col = 0
+				oddRow = True
+				end = self.colsOdd
+				readSem = len(tokens) > 12
+				readFit = len(tokens) > 13
+				self.allocate(len(tokens) > 12, len(tokens) > 13)
+				for line in file:
+					tokens = numpy.fromstring(line, sep = ' ')
+					self.euler[row, col, 0] = tokens[0]
+					self.euler[row, col, 1] = tokens[1]
+					self.euler[row, col, 2] = tokens[2]
+					self.x[row, col] = tokens[3]
+					self.y[row, col] = tokens[4]
+					self.iq[row, col] = tokens[5]
+					self.ci[row, col] = tokens[6]
+					self.phase[row, col] = tokens[7]
+					if readSem:
+						self.sem[row, col] = tokens[8]
+					if readFit:
+						self.fit[row, col] = tokens[9]
+					col += 1
+					if col == end:
+						col = 0
+						row += 1
+						oddRow = not oddRow
+						end = self.colsOdd if oddRow else self.colsEven
+				complete = row == self.rows
 
 			#check for incomplete file
-			if row != self.rows:
+			if not complete:
 					raise EOFError('ang has incomplete body')
 
 	def readH5(self, filename):
