@@ -202,29 +202,16 @@ for k in range(grains):
 	avgEu[k] = numpy.array(rotations.cu2eu(list(cu)))
 
 # create scan
-# fill header and allocate arrays
-scan = tsl.OimScan()
-scan.colsOdd = synCols
-scan.colsEven = synCols
-scan.rows = synRows
-scan.xStep = 1.0
-scan.yStep = 1.0
-scan.allocate()
+scan = tsl.OimScan.zeros_like(syntheticGrains, resolution = (1.0, 1.0), origin = (0.0, 0.0))
 
 # fill arrays
 for j in range(synRows):
 	for i in range(synCols):
 		scan.euler[j,i] = avgEu[syntheticGrains[j,i]-1]
-singleRow = numpy.linspace(0, scan.xStep * (synCols-1), synCols)
-for j in range(synRows):
-	scan.x[j] = singleRow
-singleCol = numpy.linspace(0, scan.yStep * (synRows-1), synRows)
-for i in range(synCols):
-	scan.y[:,i] = singleCol
 scan.iq.fill(1)
 scan.ci.fill(1)
 
-# fill phases
+# fill phase list
 scan.phaseList.append(tsl.OimPhase(1))
 scan.phaseList[-1].materialName = 'Synthetic Phase'
 scan.phaseList[-1].formula = 'Syn'

@@ -65,6 +65,24 @@ class OimScan:
 			if extension == '.h5' or extension == '.hdf' or extension == '.hdf5':
 				self.readH5(filename)
 
+	@staticmethod
+	def zeros_like(array, resolution = (1.0, 1.0), origin = (0.0, 0.0)):
+		scan = OimScan()
+		scan.rows = array.shape[0]
+		scan.colsOdd = array.shape[1]
+		scan.colsEven = array.shape[1]
+		scan.gridType = Grid.Square
+		scan.xStep = resolution[0]
+		scan.yStep = resolution[1]
+		scan.allocate()
+		singleRow = numpy.linspace(0, scan.xStep * (scan.colsOdd-1), scan.colsOdd) + origin[0]
+		for j in range(scan.rows):
+		  scan.x[j] = singleRow
+		singleCol = numpy.linspace(0, scan.yStep * (scan.rows-1), scan.rows) + origin[1]
+		for i in range(scan.colsOdd):
+		  scan.y[:,i] = singleCol
+		return scan
+
 	def clearHeader(self):
 		self.xstar = 0
 		self.ystar = 0
@@ -88,6 +106,7 @@ class OimScan:
 		self.y = numpy.zeros((self.rows, maxCols))
 		self.iq = numpy.zeros((self.rows, maxCols))
 		self.ci = numpy.zeros((self.rows, maxCols))
+		self.ci.fill(-1)
 		self.phase = numpy.zeros((self.rows, maxCols), dtype = 'int')
 		self.sem = numpy.zeros((self.rows, maxCols)) if sem else None
 		self.fit = numpy.zeros((self.rows, maxCols)) if fit else None
