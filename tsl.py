@@ -57,13 +57,16 @@ class OimScan:
 	def __init__(self, filename = None):
 		self.clearHeader()
 		self.allocate()
+		self.file = filename
 		if filename is not None:
 			file, extension = os.path.splitext(filename)
 			extension = extension.lower()
 			if extension == '.ang':
 				self.readAng(filename)
-			if extension == '.h5' or extension == '.hdf' or extension == '.hdf5':
+			elif extension == '.h5' or extension == '.hdf' or extension == '.hdf5' or extension == '.hd5':
 				self.readH5(filename)
+			else:
+				raise IOError('unknown file extension')
 
 	@staticmethod
 	def zeros_like(array, resolution = (1.0, 1.0), origin = (0.0, 0.0)):
@@ -111,47 +114,50 @@ class OimScan:
 		self.sem = numpy.zeros((self.rows, maxCols)) if sem else None
 		self.fit = numpy.zeros((self.rows, maxCols)) if fit else None
 
+	def angHeader(self):
+		header = '# TEM_PIXperUM 1.000000\n'
+		header += ('# TEM_PIXperUM 1.000000\n')
+		header += ('# x-star ' + str(self.xstar) + '\n')
+		header += ('# y-star ' + str(self.ystar) + '\n')
+		header += ('# z-star ' + str(self.zstar) + '\n')
+		header += ('# WorkingDistance ' + str(self.workingDistance) + '\n')
+		header += ('#\n')
+		for phase in self.phaseList:
+			header += ('# Phase ' + str(phase.number) + '\n')
+			header += ('# MaterialName ' + phase.materialName + '\n')
+			header += ('# Formula ' + phase.formula + '\n')
+			header += ('# Info ' + phase.info + '\n')
+			header += ('# Symmetry ' + str(phase.symmetry) + '\n')
+			constants = str(phase.latticeConstants[0]) + ' ' + str(phase.latticeConstants[1]) + ' ' + str(phase.latticeConstants[2]) + ' ' + str(phase.latticeConstants[3]) + ' ' + str(phase.latticeConstants[4]) + ' ' + str(phase.latticeConstants[5])
+			header += ('# LatticeConstants ' + constants + '\n')
+			header += ('# NumberFamilies ' + str(len(phase.hklFamilies)) + '\n')
+			for family in phase.hklFamilies:
+				header += ('# hklFamilies ' + str(family.hkl[0]) + ' ' + str(family.hkl[1]) + ' ' + str(family.hkl[2]) + ' ')
+				header += (str(family.useInIndexing) + ' ' + str(family.diffractionIntensity) + ' ' + str(family.showBands) + '\n')
+			for line in phase.elasticConstants:
+				constants = str(line[0]) + ' ' + str(line[1]) + ' ' + str(line[2]) + ' ' + str(line[3]) + ' ' + str(line[4]) + ' ' + str(line[5])
+				header += ('# ElasticConstants ' + constants + '\n')
+			header += ('# Categories')
+			for category in phase.categories:
+				header += (' ' + str(category))
+			header += ('\n#\n')
+		header += ('# GRID: ' + self.gridType.value + '\n')
+		header += ('# XSTEP: ' + str(self.xStep) + '\n')
+		header += ('# YSTEP: ' + str(self.yStep) + '\n')
+		header += ('# NCOLS_ODD: ' + str(self.colsOdd) + '\n')
+		header += ('# NCOLS_EVEN: ' + str(self.colsEven) + '\n')
+		header += ('# NROWS: ' + str(self.rows) + '\n')
+		header += ('#\n')
+		header += ('# OPERATOR: ' + self.operator + '\n')
+		header += ('# SAMPLEID: ' + self.sampleId + '\n')
+		header += ('# SCANID: ' + self.scanId + '\n')
+		header += ('#\n')
+		return header
+
 	def writeAng(self, filename):
 		with open(filename, 'w') as file:
-			# compose header
-			header = '# TEM_PIXperUM 1.000000\n'
-			header += ('# TEM_PIXperUM 1.000000\n')
-			header += ('# x-star ' + str(self.xstar) + '\n')
-			header += ('# y-star ' + str(self.ystar) + '\n')
-			header += ('# z-star ' + str(self.zstar) + '\n')
-			header += ('# WorkingDistance ' + str(self.workingDistance) + '\n')
-			header += ('#\n')
-			for phase in self.phaseList:
-				header += ('# Phase ' + str(phase.number) + '\n')
-				header += ('# MaterialName ' + phase.materialName + '\n')
-				header += ('# Formula ' + phase.formula + '\n')
-				header += ('# Info ' + phase.info + '\n')
-				header += ('# Symmetry ' + str(phase.symmetry) + '\n')
-				constants = str(phase.latticeConstants[0]) + ' ' + str(phase.latticeConstants[1]) + ' ' + str(phase.latticeConstants[2]) + ' ' + str(phase.latticeConstants[3]) + ' ' + str(phase.latticeConstants[4]) + ' ' + str(phase.latticeConstants[5])
-				header += ('# LatticeConstants ' + constants + '\n')
-				header += ('# NumberFamilies ' + str(len(phase.hklFamilies)) + '\n')
-				for family in phase.hklFamilies:
-					header += ('# hklFamilies ' + str(family.hkl[0]) + ' ' + str(family.hkl[1]) + ' ' + str(family.hkl[2]) + ' ')
-					header += (str(family.useInIndexing) + ' ' + str(family.diffractionIntensity) + ' ' + str(family.showBands) + '\n')
-				for line in phase.elasticConstants:
-					constants = str(line[0]) + ' ' + str(line[1]) + ' ' + str(line[2]) + ' ' + str(line[3]) + ' ' + str(line[4]) + ' ' + str(line[5])
-					header += ('# ElasticConstants ' + constants + '\n')
-				header += ('# Categories')
-				for category in phase.categories:
-					header += (' ' + str(category))
-				header += ('\n#\n')
-			header += ('# GRID: ' + self.gridType.value + '\n')
-			header += ('# XSTEP: ' + str(self.xStep) + '\n')
-			header += ('# YSTEP: ' + str(self.yStep) + '\n')
-			header += ('# NCOLS_ODD: ' + str(self.colsOdd) + '\n')
-			header += ('# NCOLS_EVEN: ' + str(self.colsEven) + '\n')
-			header += ('# NROWS: ' + str(self.rows) + '\n')
-			header += ('#\n')
-			header += ('# OPERATOR: ' + self.operator + '\n')
-			header += ('# SAMPLEID: ' + self.sampleId + '\n')
-			header += ('# SCANID: ' + self.scanId + '\n')
-			header += ('#\n')
-			file.write(header)
+			# write header
+			file.write(self.angHeader())
 
 			# write body
 			if self.sem is not None and self.fit is not None:
@@ -175,6 +181,61 @@ class OimScan:
 						file.write(' '.join([str(item) for item in stackedData[:,j,i]]))
 						file.write('\n')
 					oddRow = not oddRow
+
+	def writeToH5(self, node):
+		node.create_group('Header')
+		node['Header'].create_dataset('GRID', (1,), dtype='S'+str(len(self.gridType.value)+1))[0] = self.gridType.value.encode('utf8')
+		node['Header'].create_dataset('NCOLS_EVEN', (1,), dtype='int32')[0] = self.colsEven
+		node['Header'].create_dataset('NCOLS_ODD', (1,), dtype='int32')[0] = self.colsOdd
+		node['Header'].create_dataset('NROWS', (1,), dtype='int32')[0] = self.rows
+		node['Header'].create_dataset('OPERATOR', (1,), dtype='S'+str(len(self.operator)+1))[0] = self.operator.encode('utf8')
+		node['Header'].create_dataset('OriginalFile', (1,), dtype='S'+str(len(self.file)+1))[0] = self.file.encode('utf8')
+		header = self.angHeader()
+
+		node['Header'].create_group('Phases')
+		for p in self.phaseList:
+			node['Header']['Phases'].create_group(str(p.number))
+			phase = node['Header']['Phases'][str(p.number)]
+			phase.create_dataset('Categories', (len(p.categories),), dtype = 'int32')[:] = p.categories
+			phase.create_dataset('Formula', (1,), dtype='S'+str(len(p.formula)+1))[0] = p.formula.encode('utf8')
+			phase.create_dataset('Info', (1,), dtype='S'+str(len(p.info)+1))[0] = p.info.encode('utf8')
+			phase.create_dataset('LatticeConstants', (6,), dtype = 'float32')[:] = p.latticeConstants
+			phase.create_dataset('MaterialName', (1,), dtype='S'+str(len(p.materialName)+1))[0] = p.materialName.encode('utf8')
+			phase.create_dataset('NumberFamilies', (1,), dtype = 'int32')[0] = len(p.hklFamilies)
+			phase.create_dataset('Phase', (1,), dtype = 'int32')[0] = p.number
+			phase.create_dataset('Symmetry', (1,), dtype = 'int32')[0] = p.symmetry
+			phase.create_group('hklFamilies')
+			type = numpy.dtype([('H','int32'),('K','int32'),('L','int32'),('Solution 1','int8'),('Diffraction Intensity','float32'),('Solution 2','int8')])
+			for i in range(len(p.hklFamilies)):
+				hkl = p.hklFamilies[i]
+				phase['hklFamilies'].create_dataset(str(i), (1,), dtype = type)[0] = (hkl.hkl[0],hkl.hkl[1],hkl.hkl[2],hkl.useInIndexing,hkl.diffractionIntensity,hkl.showBands)
+
+		node['Header'].create_dataset('OriginalHeader', (1,), dtype='S'+str(len(header)+1))[0] = header.encode('utf8')
+		node['Header'].create_dataset('SAMPLEID', (1,), dtype='S'+str(len(self.sampleId)+1))[0] = self.sampleId.encode('utf8')
+		node['Header'].create_dataset('SCANID', (1,), dtype='S'+str(len(self.scanId)+1))[0] = self.scanId.encode('utf8')
+		node['Header'].create_dataset('TEM_PIXperUM', (1,), dtype='float32')[0] = 1.0
+		node['Header'].create_dataset('WorkingDistance', (1,), dtype='float32')[0] = self.workingDistance
+		node['Header'].create_dataset('XSTEP', (1,), dtype='float32')[0] = self.xStep
+		node['Header'].create_dataset('YSTEP', (1,), dtype='float32')[0] = self.yStep
+		node['Header'].create_dataset('x-star', (1,), dtype='float32')[0] = self.xstar
+		node['Header'].create_dataset('y-star', (1,), dtype='float32')[0] = self.ystar
+		node['Header'].create_dataset('z-star', (1,), dtype='float32')[0] = self.zstar
+
+		node.create_group('Data')
+		maxCols = max(self.colsOdd, self.colsEven)
+		numPoints = max(self.colsEven, self.colsOdd) * self.rows
+		node['Data'].create_dataset('Phi1', (numPoints,), dtype = 'float32')[:] = numpy.reshape(self.euler[:,:,0], (numPoints,))
+		node['Data'].create_dataset('Phi', (numPoints,), dtype = 'float32')[:] = numpy.reshape(self.euler[:,:,1], (numPoints,))
+		node['Data'].create_dataset('Phi2', (numPoints,), dtype = 'float32')[:] = numpy.reshape(self.euler[:,:,2], (numPoints,))
+		node['Data'].create_dataset('X Position', (numPoints,), dtype = 'float32')[:] = numpy.reshape(self.x, (numPoints,))
+		node['Data'].create_dataset('Y Position', (numPoints,), dtype = 'float32')[:] = numpy.reshape(self.y, (numPoints,))
+		node['Data'].create_dataset('Image Quality', (numPoints,), dtype = 'float32')[:] = numpy.reshape(self.iq, (numPoints,))
+		node['Data'].create_dataset('Confidence Index', (numPoints,), dtype = 'float32')[:] = numpy.reshape(self.ci, (numPoints,))
+		node['Data'].create_dataset('PhaseData', (numPoints,), dtype = 'int32')[:] = numpy.reshape(self.phase, (numPoints,))
+		if self.sem is not None:
+			node['Data'].create_dataset('SEM Signal', (numPoints,), dtype = 'float32')[:] = numpy.reshape(self.sem, (numPoints,))
+		if self.fit is not None:
+			node['Data'].create_dataset('Fit', (numPoints,), dtype = 'float32')[:] = numpy.reshape(self.fit, (numPoints,))
 
 	def readAng(self, filename):
 		with open(filename, newline = '') as file:
@@ -371,7 +432,7 @@ class OimScan:
 				phase.categories = [0] * 5
 				self.phaseList.append(phase)
 			self.colsOdd = header['nColumns'][0]
-			self.colsEven = self.colsOdd - 1
+			self.colsEven = self.colsOdd - 1 if self.gridType is Grid.Hexagonal else self.colsOdd
 			self.rows = header['nRows'][0]
 			self.xStep = header['Step X'][0]
 			self.yStep = header['Step Y'][0]
