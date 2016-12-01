@@ -410,7 +410,7 @@ def ho2cu(ho):
 
 	# invert operation M3
 	cu[:2] = [x * math.sqrt(2.0 * rs / (rs + abs(cu[2]))) for x in cu[:2]]
-	cu[2] = -rs * math.sqrt(math.pi / 6.0) if cu[2] < 0.0 else rs / math.sqrt(6.0 / math.pi)
+	cu[2] = math.copysign(rs * math.sqrt(math.pi / 6.0), cu[2])
 
 	# invert operation M2
 	sq = sorted([x * x for x in cu[:2]])

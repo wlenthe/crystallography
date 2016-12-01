@@ -243,9 +243,9 @@ class Symmetry(enum.Enum):
 		q = Quaternion(qu)
 		assert(isinstance(convention, rotations.Convention))
 		if convention is rotations.Convention.passive:
-			qFZ = max([(sym * q).supplement() for sym in self.quOperators()])
+			qFZ = min([(sym * q).supplement() for sym in self.quOperators()])
 		elif convention is rotations.Convention.active:
-			qFZ = max([(q * sym).supplement() for sym in self.quOperators()])
+			qFZ = min([(q * sym).supplement() for sym in self.quOperators()])
 		return qFZ if isinstance(qu, Quaternion) else qFZ.wxyz
 
 	# computes disorientation between passive rotations qu1 and qu2 (active is from qu1 * sym * qu2.conjugate())
