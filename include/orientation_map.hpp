@@ -79,7 +79,7 @@ class Segmentation : public OrientationMap<T> {
 		Segmentation(OrientationMap<T>& om, T tol = T(5), T thr = DefaultThreshold()) : OrientationMap<T>(om) {segment(tol, thr);}
 		template<typename U> std::vector<U> mapGrainToPixel(const std::vector<U>& grainArray, const size_t numComp = 1) const;//copy a per grain array to a per pixel array
 		std::vector< std::set<size_t> > findNeighbors() const;
-		std::vector<std::uint8_t> mapColor();//6 color map coloring (nice alternative to unique id coloring) - linear 5 / quadratic 4 color algorithms exist but are more complex
+		std::vector<std::uint8_t> mapColor() const;//6 color map coloring (nice alternative to unique id coloring) - linear 5 / quadratic 4 color algorithms exist but are more complex
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -238,7 +238,7 @@ std::vector< std::set<size_t> > Segmentation<T>::findNeighbors() const {
 }
 
 template <typename T>
-std::vector<std::uint8_t> Segmentation<T>::mapColor() {
+std::vector<std::uint8_t> Segmentation<T>::mapColor() const {
 	std::vector<std::uint8_t> colors(numGrains, 0x00);
 	if(numGrains <= 5) {
 		std::iota(colors.begin(), colors.end(), 0x00);//handle trivial cases

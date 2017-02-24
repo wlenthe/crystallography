@@ -86,7 +86,11 @@ namespace tsl {
 	//templated strtof/strtod/strtold
 	template <typename T> T inline strtofp(const char* str, char** str_end) {return std::strtod (str, str_end);}
 	template <> float       inline strtofp(const char* str, char** str_end) {return std::strtof (str, str_end);}
+#ifdef __MINGW32__
+	template <> double      inline strtofp(const char* str, char** str_end) {return (double)std::strtold(str, str_end);}//for some reason strtod is insanely slow in mingw
+#else
 	template <> double      inline strtofp(const char* str, char** str_end) {return std::strtod (str, str_end);}
+#endif
 	template <> long double inline strtofp(const char* str, char** str_end) {return std::strtold(str, str_end);}
 }
 
