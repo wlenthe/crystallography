@@ -29,14 +29,41 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.            #
 #                                                                                 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-cmake_minimum_required(VERSION 3.1)
-
-if(MSVC)
-	add_definitions(-D_SCL_SECURE_NO_WARNINGS) # silence visual studio security warnings
+if(MINGW)
+	add_definitions(-D_hypot=hypot) # if cmath is included on mingw there is a name conflict with python
 endif()
 
-# add include folder
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+# find python
+find_package(PythonInterp REQUIRED) # should also define PYTHON_INCLUDE_DIRS and PYTHON_LIBRARIES but seems to fail
+get_filename_component(Python_Dir "${PYTHON_EXECUTABLE}" DIRECTORY)
 
-add_subdirectory(test)
-add_subdirectory(python)
+find_file(Python_Header "python.h" HINTS  ${Python_Dir})
+get_filename_component(PYTHON_INCLUDE_DIR ${Python_Header} DIRECTORY CACHE)
+include_directories(${PYTHON_INCLUDE_DIR})
+unset(Python_Header CACHE)
+
+if(MSVC)
+	find_library(PYTHON_LIBRARY NAMES python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} HINTS ${Python_Dir}/libs)
+else()
+	find_library(PYTHON_LIBRARY NAMES libpython${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} HINTS ${Python_Dir}/libs)
+endif()
+get_filename_component(PYTHON_LIBRARY_DIR ${PYTHON_LIBRARY} DIRECTORY CACHE)
+
+# find numpy
+execute_process(COMMAND ${PYTHON_EXECUTABLE} "-c" "import numpy;print(numpy.get_include(),end='')" OUTPUT_VARIABLE Python_Output ERROR_VARIABLE Python_Error)
+STRING(REGEX REPLACE "\\\\" "/" Python_Output ${Python_Output}) # handle windows \ -> /
+if(NOT "${Python_Error}" STREQUAL "")
+	message(FATAL_ERROR "failed to find numpy include directory: ${Python_Error}")
+endif()
+find_path(NUMPY_INCLUDE_DIR numpy/arrayobject.h HINTS ${Python_Output})
+get_filename_component(NUMPY_DIR ${NUMPY_INCLUDE_DIR} DIRECTORY)
+include_directories(${NUMPY_INCLUDE_DIR})
+find_library(NUMPY_LIBRARY NAMES npymath HINTS ${NUMPY_DIR}/lib)
+get_filename_component(NUMPY_LIBRARY_DIR ${NUMPY_LIBRARY} DIRECTORY CACHE)
+
+# add python extension
+add_library(crystallography MODULE crystallography_module.cpp)
+target_link_libraries(crystallography ${PYTHON_LIBRARY} ${NUMPY_LIBRARY})
+set_property(TARGET crystallography PROPERTY CXX_STANDARD 11)
+set_property(TARGET crystallography PROPERTY PREFIX "") # name crystallography instead of libcrystallography
+set_property(TARGET crystallography PROPERTY SUFFIX ".pyd") # name crystallography.pyd instead of crystallography.(dll/dylib)
