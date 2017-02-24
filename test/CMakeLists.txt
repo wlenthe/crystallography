@@ -29,13 +29,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.            #
 #                                                                                 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-cmake_minimum_required(VERSION 3.1)
 
-if(MSVC)
-	add_definitions(-D_SCL_SECURE_NO_WARNINGS) # silence visual studio security warnings
-endif()
-
-# add include folder
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-add_subdirectory(test)
+# add tests
+add_executable(rotations_test rotations_test.cpp)
+set_property(TARGET rotations_test PROPERTY CXX_STANDARD 11)
