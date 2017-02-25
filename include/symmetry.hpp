@@ -39,6 +39,7 @@
 
 #include "rotations.hpp"
 #include "quaternion.hpp"
+#include "orientation_coloring.hpp"
 
 //symmetry abstract base class
 template <typename T>
@@ -75,6 +76,10 @@ class Symmetry {
 			nearbyQu(qu1.data(), qu2.data(), equiv.data());
 			return equiv;
 		}
+
+		//compute ipf color (0-1 rgb) for orientation, assumes unit vector
+		virtual void ipfColor(T const * const qu, T * const rgb, T const * const refDir) const = 0;
+		virtual void ipfColor(const Quaternion<T>& qu, T * const rgb, T const * const refDir) const = 0;
 };
 
 //only centrosymmetric (Laue) groups are implemented
@@ -156,7 +161,15 @@ class NFoldSymmetry : public Symmetry<T> {
 };
 
 template <typename T, size_t N>
-class CyclicSymmetry : public NFoldSymmetry<T, N> {};
+class CyclicSymmetry : public NFoldSymmetry<T, N> {
+	public:
+		virtual void ipfColor(T const * const qu, T * const rgb, T const * const refDir) const {
+			T n[3];
+			quaternion::rotateVector(qu, refDir, n);
+			coloring::cyclicIpf<T,N>(n, rgb);
+		}
+		virtual void ipfColor(const Quaternion<T>& qu, T * const rgb, T const * const refDir) const {ipfColor(qu.data(), rgb, refDir);}
+};
 
 template <typename T, size_t N>
 class DihedralSymmetry : public NFoldSymmetry<T, N> {
@@ -172,6 +185,13 @@ class DihedralSymmetry : public NFoldSymmetry<T, N> {
 			if(x > T(1)) return false;
 			return y <= kFz + kFzX * x;//y <= (1+sqrt(2))*(1-t) + ((2+sqrt(2))*t - (1+sqrt(2))) * x
 		}
+
+		virtual void ipfColor(T const * const qu, T * const rgb, T const * const refDir) const {
+			T n[3];
+			quaternion::rotateVector(qu, refDir, n);
+			coloring::dihedralIpf<T,N>(n, rgb);
+		}
+		virtual void ipfColor(const Quaternion<T>& qu, T * const rgb, T const * const refDir) const {ipfColor(qu.data(), rgb, refDir);}
 };
 
 template <typename T>
@@ -190,6 +210,13 @@ class CubicLowSymmetry : public PolyhedralSymmetry<T> {
 	public:
 		std::string name() const {return "Cubic Low (m-3m, Oh)";}
 		std::vector<Quaternion<T> > const * const quOperators() const {return &symmetry::operators<T>::cubiclow;}
+
+		virtual void ipfColor(T const * const qu, T * const rgb, T const * const refDir) const {
+			T n[3];
+			quaternion::rotateVector(qu, refDir, n);
+			coloring::cubicLowIpf(n, rgb);
+		}
+		virtual void ipfColor(const Quaternion<T>& qu, T * const rgb, T const * const refDir) const {ipfColor(qu.data(), rgb, refDir);}
 };
 
 template <typename T>
@@ -225,6 +252,13 @@ class CubicSymmetry : public PolyhedralSymmetry<T> {
 				std::sort(diso, diso+4, std::greater<T>());
 			}
 		}
+
+		virtual void ipfColor(T const * const qu, T * const rgb, T const * const refDir) const {
+			T n[3];
+			quaternion::rotateVector(qu, refDir, n);
+			coloring::cubicIpf(n, rgb);
+		}
+		virtual void ipfColor(const Quaternion<T>& qu, T * const rgb, T const * const refDir) const {ipfColor(qu.data(), rgb, refDir);}
 };
 
 template <typename T> class HexagonalSymmetry     : public DihedralSymmetry<T, 6> {
@@ -275,6 +309,13 @@ class TriclinicSymmetry : public Symmetry<T> {
 		std::string name() const {return "Triclinic (-1, Ci)";}
 		bool roInFz(T const * const ro) const {return true;}
 		std::vector<Quaternion<T> > const * const quOperators() const {return &symmetry::operators<T>::triclinic;}
+
+		virtual void ipfColor(T const * const qu, T * const rgb, T const * const refDir) const {
+			T n[3];
+			quaternion::rotateVector(qu, refDir, n);
+			coloring::hemiIpf(n, rgb);
+		}
+		virtual void ipfColor(const Quaternion<T>& qu, T * const rgb, T const * const refDir) const {ipfColor(qu.data(), rgb, refDir);}
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
