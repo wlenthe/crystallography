@@ -120,7 +120,7 @@ static PyObject* rotation_wrapper(PyObject* self, PyObject* args, PyObject* kwds
 		for(int i = axis+2; i < ndims; i++) vdims.push_back(dims[i]);
 		PyArray_Dims newDims;
 		newDims.ptr = vdims.data();
-		newDims.len = vdims.size();
+		newDims.len = (int)vdims.size();
 		input = (PyArrayObject*)PyArray_Newshape(input, &newDims, NPY_CORDER);
 
 		ndims -= 1;
@@ -142,8 +142,8 @@ static PyObject* rotation_wrapper(PyObject* self, PyObject* args, PyObject* kwds
 
 	//get number of points and stride in axis
 	int totalPoints = 1;
-	for(int i = 0; i < ndims; i++) totalPoints *= dims[i];
-	totalPoints /= dims[axis];
+	for(npy_intp i = 0; i < ndims; i++) totalPoints *= (int)dims[i];
+	totalPoints /= (int)dims[axis];
 	npy_intp stride = PyArray_STRIDE(input, axis) / sizeof(double);
 
 	//create output array
@@ -152,7 +152,7 @@ static PyObject* rotation_wrapper(PyObject* self, PyObject* args, PyObject* kwds
 		newDims.erase(newDims.begin() + axis);
 		if(newDims.empty()) newDims.push_back(1);
 	} else newDims[axis] = N_TO;
-	PyArrayObject* output = (PyArrayObject*)PyArray_EMPTY(newDims.size(), newDims.data(), QuatOut ? NPY_QUAT : NPY_DOUBLE, 0);
+	PyArrayObject* output = (PyArrayObject*)PyArray_EMPTY((int)newDims.size(), newDims.data(), QuatOut ? NPY_QUAT : NPY_DOUBLE, 0);
 	
 	//get data
 	if(stride == 1) {
@@ -212,7 +212,7 @@ static PyObject* rotation_wrapper(PyObject* self, PyObject* args, PyObject* kwds
 		for(int i = axis+1; i < ndims; i++) vdims.push_back(dims[i]);
 		PyArray_Dims newDims;
 		newDims.ptr = vdims.data();
-		newDims.len = vdims.size();
+		newDims.len = (int)vdims.size();
 		return PyArray_Newshape(output, &newDims, NPY_CORDER);
 	} else {
 		return (PyObject*)output;
@@ -234,11 +234,11 @@ static PyObject* rotation_wrapper_qu(PyObject* self, PyObject* other, void(*f)(d
 	//create output array
 	std::vector<npy_intp> newDims(dims, dims+ndims);
 	newDims.push_back(N_TO);
-	PyArrayObject* output = (PyArrayObject*)PyArray_EMPTY(newDims.size(), newDims.data(), NPY_DOUBLE, 0);
+	PyArrayObject* output = (PyArrayObject*)PyArray_EMPTY((int)newDims.size(), newDims.data(), NPY_DOUBLE, 0);
 
 	//get number of points
 	int totalPoints = 1;
-	for(int i = 0; i < ndims; i++) totalPoints *= dims[i];
+	for(npy_intp i = 0; i < ndims; i++) totalPoints *= (int)dims[i];
 	
 	//convert
 	double* from = (double*)PyArray_DATA(input);
@@ -255,7 +255,7 @@ static PyObject* rotation_wrapper_qu(PyObject* self, PyObject* other, void(*f)(d
 		newDims.push_back(3);
 		PyArray_Dims reshapedDims;
 		reshapedDims.ptr = newDims.data();
-		reshapedDims.len = newDims.size();
+		reshapedDims.len = (int)newDims.size();
 		return PyArray_Newshape(output, &reshapedDims, NPY_CORDER);
 	} else {
 		return (PyObject*)output;

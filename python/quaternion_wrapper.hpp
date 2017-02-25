@@ -538,15 +538,15 @@ static PyObject* double2object(PyObject* self, PyObject* args, PyObject* kwds) {
 
 	// get number of points and stride in axis
 	int totalPoints = 1;
-	for(int i = 0; i < ndims; i++) totalPoints *= dims[i];
-	totalPoints /= dims[axis];
+	for(int i = 0; i < ndims; i++) totalPoints *= (int)dims[i];
+	totalPoints /= (int)dims[axis];
 	npy_intp stride = PyArray_STRIDE(input, axis) / sizeof(double);
 
 	//create output array of objects
 	std::vector<npy_intp> newDims(dims, dims+ndims);
 	newDims[axis] = 1;
 	if(ndims > 1) newDims.erase(newDims.begin()+axis);
-	PyArrayObject* output = (PyArrayObject*)PyArray_EMPTY(newDims.size(), newDims.data(), NPY_QUAT, 0);
+	PyArrayObject* output = (PyArrayObject*)PyArray_EMPTY((int)newDims.size(), newDims.data(), NPY_QUAT, 0);
 	
 	//get data
 	double* to = (double*)PyArray_DATA(output);
@@ -597,12 +597,12 @@ static PyObject* object2double(PyObject* self, PyObject* array) {
 
 	//get number of points
 	int totalPoints = 4;
-	for(int i = 0; i < ndims; i++) totalPoints *= dims[i];
+	for(npy_intp i = 0; i < ndims; i++) totalPoints *= (int)dims[i];
 
 	//create output array of doubles
 	std::vector<npy_intp> newDims(dims, dims+ndims);
 	newDims.push_back(4);
-	PyArrayObject* output = (PyArrayObject*)PyArray_EMPTY(newDims.size(), newDims.data(), NPY_FLOAT64, 0);
+	PyArrayObject* output = (PyArrayObject*)PyArray_EMPTY((int)newDims.size(), newDims.data(), NPY_FLOAT64, 0);
 	
 	//get pointers and copy data
 	double* from = (double*)PyArray_DATA(input);

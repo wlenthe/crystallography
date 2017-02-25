@@ -97,7 +97,7 @@ static PyObject* Symmetry_fzQu(PySymmetry* self, PyObject* array) {
 
 	//get number of points and compute fz quaternions
 	int totalPoints = 1;
-	for(int i = 0; i < ndims; i++) totalPoints *= dims[i];
+	for(npy_intp i = 0; i < ndims; i++) totalPoints *= (int)dims[i];
 	if(1 == totalPoints && !PyArray_Check(array)) {
 		return (PyObject*)Quaternion_create(sym->fzQu(from[0]));
 	} else {
@@ -139,8 +139,8 @@ static PyObject* Symmetry_qu_wrapper(PySymmetry* self, PyObject* args, PyObject*
 	//get number of points
 	int totalPoints1 = 1;
 	int totalPoints2 = 1;
-	for(int i = 0; i < ndims1; i++) totalPoints1 *= dims1[i];
-	for(int i = 0; i < ndims2; i++) totalPoints2 *= dims2[i];
+	for(npy_intp i = 0; i < ndims1; i++) totalPoints1 *= (int)dims1[i];
+	for(npy_intp i = 0; i < ndims2; i++) totalPoints2 *= (int)dims2[i];
 	bool single1 = (1 == totalPoints1 && !PyArray_Check(q1));
 	bool single2 = (1 == totalPoints2 && !PyArray_Check(q2));
 
