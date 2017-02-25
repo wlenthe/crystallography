@@ -29,6 +29,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.            *
  *                                                                                 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+//orientation transform routines based on
+// -Rowenhorst, David, et al. "Consistent Representations of and Conversions Between 3D Rotations." Model. Simul. Mater. Sci. Eng. 23.8 (2015): 083501.
+// -Rosca, D., et al. "A New Method of Constructing a Grid in the Space of 3D rotations and its Applications to Texture Analysis." Model. Simul. Mater. Sci. Eng. 22.7 (2014): 075013.
+// -fortran implementation of routines by Marc De Graef (https://github.com/marcdegraef/3Drotations)
+
+//the following conventions are used:
+// -quaternions as [w, x, y, z]
+// -rotation angle <= pi
+// -rotation axis in positive z hemisphere for rotations of pi
+// -rotation axis = [0, 0, 1] for rotations of 0
+
 #ifndef _rotations_h_
 #define _rotations_h_
 
