@@ -56,6 +56,13 @@ typedef struct {
 } PyOrientationMap;
 static bool PyOrientationMap_Check(PyObject* obj);
 
+int NPY_SIZET() {
+	static_assert(std::is_same<size_t, std::uint32_t>::value || std::is_same<size_t, std::uint64_t>::value, "could not determine numpy type for size_t");
+	if(std::is_same<size_t, std::uint32_t>::value) return NPY_UINT32;
+	else if(std::is_same<size_t, std::uint64_t>::value) return NPY_UINT64;
+	return NPY_NOTYPE;
+}
+
 static void OrientationMap_dealloc(PyOrientationMap* self){
 	//PyExc_AttributeError
 	if(NULL != self->quats  ) Py_XDECREF(self->quats);
@@ -99,13 +106,9 @@ int PyOrientationMap_readFile(PyOrientationMap* map, std::string fileName) {
 	//wrap data
 	dims[0] = map->om.rows;
 	dims.push_back(map->om.cols);
-	int typenum = NPY_NOTYPE;
-	if(std::is_same<size_t, std::uint32_t>::value) typenum = NPY_UINT32;
-	else if(std::is_same<size_t, std::uint64_t>::value) typenum = NPY_UINT64;
-	static_assert(std::is_same<size_t, std::uint32_t>::value || std::is_same<size_t, std::uint64_t>::value, "could not determine numpy type for size_t");
-	map->phases  = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), typenum   , (void*)map->om.phases->data());
-	map->quality = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), NPY_DOUBLE, (void*)map->om.quality->data());
-	map->quats   = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), NPY_QUAT  , (void*)map->om.quats->data());
+	map->phases  = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), NPY_SIZET(), (void*)map->om.phases->data());
+	map->quality = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), NPY_DOUBLE , (void*)map->om.quality->data());
+	map->quats   = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), NPY_QUAT   , (void*)map->om.quats->data());
 	return 0;
 }
 
@@ -249,18 +252,14 @@ static int Segmentation_init(PySegmentation* self, PyObject* args, PyObject* kwd
 
 	//wrap grain level data
 	std::vector<npy_intp> dims(1, self->seg->numGrains);
-	int typenum = NPY_NOTYPE;
-	if(std::is_same<size_t, std::uint32_t>::value) typenum = NPY_UINT32;
-	else if(std::is_same<size_t, std::uint64_t>::value) typenum = NPY_UINT64;
-	static_assert(std::is_same<size_t, std::uint32_t>::value || std::is_same<size_t, std::uint64_t>::value, "could not determine numpy type for size_t");
-	self->avgPhases = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), typenum , (void*)self->seg->avgPhases.data());
-	self->numPixels = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), typenum , (void*)self->seg->numPixels.data());
-	self->avgQuats  = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), NPY_QUAT, (void*)self->seg->avgQuats.data());
+	self->avgPhases = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), NPY_SIZET(), (void*)self->seg->avgPhases.data());
+	self->numPixels = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), NPY_SIZET(), (void*)self->seg->numPixels.data());
+	self->avgQuats  = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(), NPY_QUAT   , (void*)self->seg->avgQuats.data());
 	
 	//wrap voxel level data
 	dims[0] = self->seg->rows;
 	dims.push_back(self->seg->cols);
-	self->ids = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(),  typenum, (void*)self->seg->ids.data());
+	self->ids = (PyArrayObject*)PyArray_SimpleNewFromData(dims.size(), dims.data(),  NPY_SIZET(), (void*)self->seg->ids.data());
 	return 0;
 }
 
@@ -277,11 +276,8 @@ static PyObject* Symmetry_mapColor(PySegmentation* self) {
 
 static PyObject* Symmetry_neighbors(PySegmentation* self) {
 	//get neighbors and determine type of size_t
-	int typenum = NPY_NOTYPE;
+	int typenum = NPY_SIZET();
 	std::vector< std::set<size_t> > neighbors = self->seg->findNeighbors();
-	if(std::is_same<size_t, std::uint32_t>::value) typenum = NPY_UINT32;
-	else if(std::is_same<size_t, std::uint64_t>::value) typenum = NPY_UINT64;
-	static_assert(std::is_same<size_t, std::uint32_t>::value || std::is_same<size_t, std::uint64_t>::value, "could not determine numpy type for size_t");
 
 	//create array to hold array for each grain
 	npy_intp dims[1];

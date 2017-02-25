@@ -43,7 +43,7 @@
 #include <algorithm>
 
 #include "symmetry.hpp"
-#include "mmap.hpp"
+// #include "mmap.hpp"
 
 namespace tsl {
 	//structs to store tsl phase data
@@ -105,7 +105,7 @@ class TSL {
 		tsl::GridType gridType;
 		std::vector<tsl::Phase> phaseList;
 		std::vector<T> eulers, x, y, iq, ci, sem, fit;
-		std::vector<std::uint32_t> phases;
+		std::vector<size_t> phases;
 		bool tslEulerConvention;
 
 		TSL(std::string fileName);
@@ -446,6 +446,8 @@ size_t TSL<T>::readAngData(std::istream& is, size_t tokens) {
 
 template <typename T>
 size_t TSL<T>::readAngDataMemMap(std::string fileName, std::streamoff offset, size_t tokens) {
+	throw std::runtime_error("not yet implemented for unix");
+/*
 	//open memory mapped file
 	MemoryMappedFile mapped(fileName, MemoryMappedFile::Hint::Sequential);
 	char* data = mapped.rawPointer() + offset;
@@ -488,6 +490,7 @@ size_t TSL<T>::readAngDataMemMap(std::string fileName, std::streamoff offset, si
 		}
 	}
 	return pointsRead;
+*/
 }
 
 #endif//_tsl_h_
