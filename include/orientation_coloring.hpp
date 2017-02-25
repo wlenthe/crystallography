@@ -455,15 +455,16 @@ namespace coloring {
 	template <typename T, size_t N>
 	void dihedralIpf(T const * const n, T * const rgb) {
 		T nFs[3], theta, rho;
+		bool whiteCenter = true;
 		if(3 == N) {//handle -3m
-			bool whiteCenter = ipf::cyclicTriangle<T, 3>(n, nFs);//check if white/black center
+			whiteCenter = ipf::cyclicTriangle<T, 3>(n, nFs);//check if white/black center
 			ipf::dihedralTriangle<T, 6>(n, nFs);//move to fundamental sector
 			ipf::dihedralToHemi<T, 6>(nFs, theta, rho);//stretch to northern hemisphere
 		} else {
 			ipf::dihedralTriangle<T, N>(n, nFs);//move to fundamental sector
 			ipf::dihedralToHemi<T, N>(nFs, theta, rho);//stretch to northern hemisphere
 		}
-		ipf::hemiToRgb(theta, rho, rgb);//convert to rgb
+		ipf::hemiToRgb(theta, rho, rgb, whiteCenter);//convert to rgb
 	}
 	
 	//m-3
