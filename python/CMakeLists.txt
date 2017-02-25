@@ -33,25 +33,44 @@ if(MINGW)
 	add_definitions(-D_hypot=hypot) # if cmath is included on mingw there is a name conflict with python
 endif()
 
-# find python
-find_package(PythonInterp REQUIRED) # should also define PYTHON_INCLUDE_DIRS and PYTHON_LIBRARIES but seems to fail
-get_filename_component(Python_Dir "${PYTHON_EXECUTABLE}" DIRECTORY)
+# find python executable
+find_package(PythonInterp 3 REQUIRED)
 
-find_file(Python_Header "python.h" HINTS  ${Python_Dir})
-get_filename_component(PYTHON_INCLUDE_DIR ${Python_Header} DIRECTORY CACHE)
-include_directories(${PYTHON_INCLUDE_DIR})
-unset(Python_Header CACHE)
-
-if(MSVC)
-	find_library(PYTHON_LIBRARY NAMES python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} HINTS ${Python_Dir}/libs)
-else()
-	find_library(PYTHON_LIBRARY NAMES libpython${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} HINTS ${Python_Dir}/libs)
+# find python include directory
+execute_process(COMMAND ${PYTHON_EXECUTABLE} "-c" "from distutils import sysconfig;print(sysconfig.get_python_inc(),end='')" OUTPUT_VARIABLE Python_Output ERROR_VARIABLE Python_Error)
+STRING(REGEX REPLACE "\\\\" "/" Python_Output ${Python_Output}) # convert windows backslash to forward slash
+if(NOT "${Python_Error}" STREQUAL "")
+	message(FATAL_ERROR "failed to find python include directory: ${Python_Error}")
 endif()
-get_filename_component(PYTHON_LIBRARY_DIR ${PYTHON_LIBRARY} DIRECTORY CACHE)
+set(PYTHON_INCLUDE_DIR ${Python_Output} CACHE PATH "python include directories")
+include_directories(${PYTHON_INCLUDE_DIR})
+
+# find python library
+if(WIN32)
+	execute_process(COMMAND ${PYTHON_EXECUTABLE} "-c" "from distutils import sysconfig;print(sysconfig.get_config_var(\"BINDIR\"),end='')" OUTPUT_VARIABLE Python_Output ERROR_VARIABLE Python_Error)
+	STRING(REGEX REPLACE "\\\\" "/" Python_Output ${Python_Output})
+	if(NOT "${Python_Error}" STREQUAL "")
+		message(FATAL_ERROR "failed to find python include directory: ${Python_Error}")
+	endif()
+	set(PYTHON_LIBRARY_DIR ${Python_Output}/libs CACHE PATH "python library directories")
+
+	if(MSVC)
+		find_library(PYTHON_LIBRARY    python${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} HINT ${PYTHON_LIBRARY_DIR} CACHE FILE)
+	elseif(MINGW)
+		find_library(PYTHON_LIBRARY libpython${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR} HINT ${PYTHON_LIBRARY_DIR} CACHE FILE)
+	endif()
+else()
+	execute_process(COMMAND ${PYTHON_EXECUTABLE} "-c" "from distutils import sysconfig;print(sysconfig.get_config_var(\"LIBDIR\"),end='')" OUTPUT_VARIABLE Python_Output ERROR_VARIABLE Python_Error)
+	if(NOT "${Python_Error}" STREQUAL "")
+		message(FATAL_ERROR "failed to find python include directory: ${Python_Error}")
+	endif()
+	set(PYTHON_LIBRARY_DIR ${Python_Output} CACHE PATH "python library directories")
+	find_library(PYTHON_LIBRARY libpython${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}m HINT ${PYTHON_LIBRARY_DIR} CACHE FILE)
+endif()
 
 # find numpy
 execute_process(COMMAND ${PYTHON_EXECUTABLE} "-c" "import numpy;print(numpy.get_include(),end='')" OUTPUT_VARIABLE Python_Output ERROR_VARIABLE Python_Error)
-STRING(REGEX REPLACE "\\\\" "/" Python_Output ${Python_Output}) # handle windows \ -> /
+STRING(REGEX REPLACE "\\\\" "/" Python_Output ${Python_Output})
 if(NOT "${Python_Error}" STREQUAL "")
 	message(FATAL_ERROR "failed to find numpy include directory: ${Python_Error}")
 endif()
@@ -66,4 +85,8 @@ add_library(crystallography MODULE crystallography_module.cpp)
 target_link_libraries(crystallography ${PYTHON_LIBRARY} ${NUMPY_LIBRARY})
 set_property(TARGET crystallography PROPERTY CXX_STANDARD 11)
 set_property(TARGET crystallography PROPERTY PREFIX "") # name crystallography instead of libcrystallography
-set_property(TARGET crystallography PROPERTY SUFFIX ".pyd") # name crystallography.pyd instead of crystallography.(dll/dylib)
+if(WIN32)
+	set_property(TARGET crystallography PROPERTY SUFFIX ".pyd") # name crystallography.pyd instead of crystallography.dll
+else()
+	set_property(TARGET crystallography PROPERTY SUFFIX ".so") # name crystallography.so
+endif()
