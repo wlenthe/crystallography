@@ -41,8 +41,84 @@
 #include "symmetry_wrapper.hpp"
 
 #include "orientation_map.hpp"
+#include "tif.hpp"
 
 #include <vector>
+
+//function to write a numpy array to a tif
+static PyObject* Py_WriteTif(PyObject* self, PyObject* args, PyObject* kwds) {
+	char* filename;
+	PyObject* array = NULL;
+	static char const* kwlist[] = {"array", "filename", NULL};
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "Os", const_cast<char**>(kwlist), &array, &filename)) return NULL;
+
+	//get array object and its dimensions
+	PyArrayObject* input = (PyArrayObject*)PyArray_FROM_OF(array, NPY_ARRAY_IN_ARRAY);
+	if(input == NULL) {
+		Py_XDECREF(input);
+		return NULL;
+	}
+	int ndims = PyArray_NDIM(input);
+	npy_intp* dims = PyArray_DIMS(input);
+
+	//make sure dimensions are 2 or 3
+	if(!(ndims == 2 || ndims == 3)) {
+		Py_XDECREF(input);
+		PyErr_SetString(PyExc_ValueError, "only 2d / 3d arrays accepted");
+		return NULL;
+	}
+
+	//get data type and pointer / write tif
+	int type = PyArray_TYPE(input);
+	void* buff = (void*)PyArray_DATA(input);
+	std::uint16_t numComp = 2 == ndims ? 1 : (std::uint16_t) dims[2];
+	switch(type) {
+		case NPY_INT8:
+			writeTif<std::int8_t>((std::int8_t*)buff, (std::int32_t)dims[0],  (std::int32_t)dims[1], filename, numComp);
+			break;
+
+		case NPY_INT16:
+			writeTif<std::int16_t>((std::int16_t*)buff, (std::int32_t)dims[0],  (std::int32_t)dims[1], filename, numComp);
+			break;
+
+		case NPY_INT32:
+			writeTif<std::int32_t>((std::int32_t*)buff, (std::int32_t)dims[0],  (std::int32_t)dims[1], filename, numComp);
+			break;
+
+		case NPY_INT64:
+			writeTif<std::int64_t>((std::int64_t*)buff, (std::int32_t)dims[0],  (std::int32_t)dims[1], filename, numComp);
+			break;
+
+		case NPY_UINT8:
+			writeTif<std::uint8_t>((std::uint8_t*)buff, (std::int32_t)dims[0],  (std::int32_t)dims[1], filename, numComp);
+			break;
+
+		case NPY_UINT16:
+			writeTif<std::uint16_t>((std::uint16_t*)buff, (std::int32_t)dims[0],  (std::int32_t)dims[1], filename, numComp);
+			break;
+
+		case NPY_UINT32:
+			writeTif<std::uint32_t>((std::uint32_t*)buff, (std::int32_t)dims[0],  (std::int32_t)dims[1], filename, numComp);
+			break;
+
+		case NPY_UINT64:
+			writeTif<std::uint64_t>((std::uint64_t*)buff, (std::int32_t)dims[0],  (std::int32_t)dims[1], filename, numComp);
+			break;
+
+		case NPY_FLOAT32:
+			writeTif<float>((float*)buff, (std::int32_t)dims[0],  (std::int32_t)dims[1], filename, numComp);
+			break;
+
+		case NPY_FLOAT64:
+			writeTif<double>((double*)buff, (std::int32_t)dims[0],  (std::int32_t)dims[1], filename, numComp);
+			break;
+
+		default:
+			Py_XDECREF(input);
+			PyErr_SetString(PyExc_ValueError, "input type must be (un)signed 8/16/32/64 bit integer or float/double");
+			return NULL;
+	}
+}
 
 static_assert(std::is_same<size_t, std::uint32_t>::value || std::is_same<size_t, std::uint64_t>::value, "could not determine numpy type for size_t");
 static const int NPY_SIZET =
@@ -117,8 +193,42 @@ static int OrientationMap_init(PyOrientationMap* self, PyObject* args, PyObject*
 	return PyOrientationMap_readFile(self, fileName);
 }
 
+static PyObject* OrientationMap_ipfColor(PyOrientationMap* self, PyObject* array) {
+	//get reference direction
+	PyArrayObject* input = (PyArrayObject*)PyArray_FROM_OTF(array, NPY_FLOAT64, NPY_ARRAY_IN_ARRAY);
+	if(input == NULL) {
+		Py_XDECREF(input);
+		return NULL;
+	}
+
+	//check array object shape
+	if(1 != PyArray_NDIM(input)) {
+		Py_XDECREF(input);
+		PyErr_SetString(PyExc_ValueError, "reference direction must be 3 component array");
+		return NULL;
+	}
+	if(3 != PyArray_DIMS(input)[0]) {
+		Py_XDECREF(input);
+		PyErr_SetString(PyExc_ValueError, "reference direction must be 3 component array");
+		return NULL;
+	}
+	double* dir = (double*)PyArray_DATA(input);
+
+	//generate colors
+	npy_intp dims[3];
+	dims[0] = self->om.rows;
+	dims[1] = self->om.cols;
+	dims[2] = 3;
+	PyArrayObject* output = (PyArrayObject*)PyArray_EMPTY(3, dims, NPY_UINT8, 0);
+	std::uint8_t* buff = (std::uint8_t*)PyArray_DATA(output);
+	std::vector<std::uint8_t> colors = self->om.ipfColor(dir);
+	std::copy(colors.begin(), colors.end(), buff);
+	return (PyObject*) output;
+}
+
 //method table
 static PyMethodDef OrientationMap_methods[] = {
+	{"ipfColor", (PyCFunction)OrientationMap_ipfColor , METH_O     , "om.ipfColor(refDir)\n\tipf color with grain average orientations"},
 	{NULL}//sentinel
 };
 
@@ -222,8 +332,9 @@ static PyObject* Segmentation_new(PyTypeObject* type, PyObject* args, PyObject* 
 static int Segmentation_init(PySegmentation* self, PyObject* args, PyObject* kwds) {
 	PyObject* omObj;
 	double tolerance = 5.0;
-	const char *kwlist[] = {"orientation_map", "tolerance", NULL};
-	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|d", const_cast<char**>(kwlist), &omObj, &tolerance)) return -1;
+	double threshold = -std::numeric_limits<double>::infinity();
+	const char *kwlist[] = {"orientation_map", "tolerance", "minQuality", NULL};
+	if(!PyArg_ParseTupleAndKeywords(args, kwds, "O|dd", const_cast<char**>(kwlist), &omObj, &tolerance)) return -1;
 	if(!PyOrientationMap_Check(omObj)) {
 		PyErr_SetString(PyExc_ValueError, "orientation_map must be OrientationMap class");
 		return -1;
@@ -245,7 +356,7 @@ static int Segmentation_init(PySegmentation* self, PyObject* args, PyObject* kwd
 	Py_INCREF(om->syms);
 
 	//perform segmentation
-	self->seg = std::make_shared< Segmentation<double> >(om->om, tolerance);
+	self->seg = std::make_shared< Segmentation<double> >(om->om, tolerance, threshold);
 	self->numGrains = self->seg->numGrains;
 
 	//wrap grain level data
@@ -259,6 +370,39 @@ static int Segmentation_init(PySegmentation* self, PyObject* args, PyObject* kwd
 	dims.push_back(self->seg->cols);
 	self->ids = (PyArrayObject*)PyArray_SimpleNewFromData((int)dims.size(), dims.data(), NPY_SIZET, (void*)self->seg->ids.data());
 	return 0;
+}
+
+static PyObject* Symmetry_ipfColor(PySegmentation* self, PyObject* array) {
+	//get reference direction
+	PyArrayObject* input = (PyArrayObject*)PyArray_FROM_OTF(array, NPY_FLOAT64, NPY_ARRAY_IN_ARRAY);
+	if(input == NULL) {
+		Py_XDECREF(input);
+		return NULL;
+	}
+
+	//check array object shape
+	if(1 != PyArray_NDIM(input)) {
+		Py_XDECREF(input);
+		PyErr_SetString(PyExc_ValueError, "reference direction must be 3 component array");
+		return NULL;
+	}
+	if(3 != PyArray_DIMS(input)[0]) {
+		Py_XDECREF(input);
+		PyErr_SetString(PyExc_ValueError, "reference direction must be 3 component array");
+		return NULL;
+	}
+	double* dir = (double*)PyArray_DATA(input);
+
+	//generate colors
+	npy_intp dims[3];
+	dims[0] = self->seg->rows;
+	dims[1] = self->seg->cols;
+	dims[2] = 3;
+	PyArrayObject* output = (PyArrayObject*)PyArray_EMPTY(3, dims, NPY_UINT8, 0);
+	std::uint8_t* buff = (std::uint8_t*)PyArray_DATA(output);
+	std::vector<std::uint8_t> colors = self->seg->avgIpfColor(dir);
+	std::copy(colors.begin(), colors.end(), buff);
+	return (PyObject*) output;
 }
 
 static PyObject* Symmetry_mapColor(PySegmentation* self) {
@@ -293,8 +437,9 @@ static PyObject* Symmetry_neighbors(PySegmentation* self) {
 
 //method table
 static PyMethodDef Segmentation_methods[] = {
-	{"mapColor", (PyCFunction)Symmetry_mapColor, METH_NOARGS, "om.mapColor()\n\tcolor grains such that no touching grains are the same"},
-	{"neighbors", (PyCFunction)Symmetry_neighbors, METH_NOARGS, "om.mapGrainToPixel(grainArray)\n\tcopy values from a per grain array to a per pixel array"},
+	{"mapColor"   , (PyCFunction)Symmetry_mapColor , METH_NOARGS, "om.mapColor()\n\tcolor grains such that no touching grains are the same"},
+	{"avgIpfColor", (PyCFunction)Symmetry_ipfColor , METH_O     , "om.avgIpfColor(refDir)\n\tipf color with grain average orientations"},
+	{"neighbors"  , (PyCFunction)Symmetry_neighbors, METH_NOARGS, "om.mapGrainToPixel(grainArray)\n\tcopy values from a per grain array to a per pixel array"},
 	{NULL}//sentinel
 };
 

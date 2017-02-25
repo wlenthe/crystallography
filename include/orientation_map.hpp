@@ -63,6 +63,7 @@ class OrientationMap {
 		T xRes, yRes;
 
 		OrientationMap(std::string fileName);//read an orientation map from a file
+		std::vector<std::uint8_t> ipfColor(T const * const refDir) const;
 };
 
 template <typename T>
@@ -80,6 +81,7 @@ class Segmentation : public OrientationMap<T> {
 		template<typename U> std::vector<U> mapGrainToPixel(const std::vector<U>& grainArray, const size_t numComp = 1) const;//copy a per grain array to a per pixel array
 		std::vector< std::set<size_t> > findNeighbors() const;
 		std::vector<std::uint8_t> mapColor() const;//6 color map coloring (nice alternative to unique id coloring) - linear 5 / quadratic 4 color algorithms exist but are more complex
+		std::vector<std::uint8_t> avgIpfColor(T const * const refDir) const;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -113,6 +115,25 @@ void OrientationMap<T>::readTSL(std::string fileName) {
 	//convert from eulers to quats
 	quats->resize(phases->size());
 	for(size_t i = 0; i < quats->size(); i++) rotations::eu2qu(file.eulers.data()+3*i, quats->operator[](i).data());
+}
+
+template <typename T>
+std::vector<std::uint8_t> OrientationMap<T>::ipfColor(T const * const refDir) const {
+	//make reference direction unit vector
+	T n[3];
+	const T mag = std::sqrt(std::inner_product(refDir, refDir+3, refDir, T(0)));
+	std::transform(refDir, refDir+3, n, [mag](T i){return i/mag;});
+
+	//compute ipf color at each point
+	T rgb[3];
+	std::vector<std::uint8_t> ipf(3 * rows * cols);
+	for(size_t i = 0; i < quats->size(); i++) {
+		syms[phases->operator[](i)]->ipfColor(quats->operator[](i), rgb, n);
+		ipf[3*i  ] = (std::uint8_t) std::round(255 * rgb[0]);
+		ipf[3*i+1] = (std::uint8_t) std::round(255 * rgb[1]);
+		ipf[3*i+2] = (std::uint8_t) std::round(255 * rgb[2]);
+	}
+	return ipf;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -294,6 +315,25 @@ std::vector<std::uint8_t> Segmentation<T>::mapColor() const {
 		}
 	}
 	return mapGrainToPixel(colors);
+}
+
+template <typename T>
+std::vector<std::uint8_t> Segmentation<T>::avgIpfColor(T const * const refDir) const {
+	//make reference direction unit vector
+	T n[3];
+	const T mag = std::sqrt(std::inner_product(refDir, refDir+3, refDir, T(0)));
+	std::transform(refDir, refDir+3, n, [mag](T i){return i/mag;});
+
+	//compute ipf color at each point
+	T rgb[3];
+	std::vector<std::uint8_t> ipf(3 * numGrains, 0x00);
+	for(size_t i = 1; i < avgQuats.size(); i++) {
+		OrientationMap<T>::syms[avgPhases[i]]->ipfColor(avgQuats[i], rgb, n);
+		ipf[3*i  ] = (std::uint8_t) std::round(255 * rgb[0]);
+		ipf[3*i+1] = (std::uint8_t) std::round(255 * rgb[1]);
+		ipf[3*i+2] = (std::uint8_t) std::round(255 * rgb[2]);
+	}
+	return mapGrainToPixel(ipf, 3);
 }
 
 #endif//_orientation_map_h_

@@ -36,6 +36,9 @@
 
 //method table
 static PyMethodDef CrystallographyMethods[] = {//{function name in python module, c++ function, argument types, description}
+	//other functions
+	{"writeTif", (PyCFunction)Py_WriteTif, METH_VARARGS | METH_KEYWORDS, "writeTif(array, filename)\n\twrite array to tif (3d arrays will be interpreted as 2d images with multiple components per pixel"},
+
 	//rotation functions
 	{"setConvention",      (PyCFunction)setConvention      , METH_VARARGS                , "setConvention(convention)\n\tset the rotation convention (convention must be 'active' or 'passive')"},
 	{"getConvention",      (PyCFunction)getConvention      , METH_NOARGS                 , "getConvention()\n\tget the rotation convention ('active' or 'passive')"                             },
