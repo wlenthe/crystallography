@@ -40,6 +40,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <numeric>
 
 namespace coloring {
 	template <typename T>
