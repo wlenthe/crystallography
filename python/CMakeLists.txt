@@ -90,3 +90,11 @@ if(WIN32)
 else()
 	set_property(TARGET crystallography PROPERTY SUFFIX ".so") # name crystallography.so
 endif()
+
+# add install rule to put python module in python path
+if(WIN32)
+	get_filename_component(PYTHON_DIR ${PYTHON_EXECUTABLE} DIRECTORY)
+	install(TARGETS crystallography LIBRARY DESTINATION ${PYTHON_DIR}/Lib/site-packages)
+else()
+	install(TARGETS crystallography LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+endif()
