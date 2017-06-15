@@ -65,7 +65,7 @@ else()
 		message(FATAL_ERROR "failed to find python include directory: ${Python_Error}")
 	endif()
 	set(PYTHON_LIBRARY_DIR ${Python_Output} CACHE PATH "python library directories")
-	find_library(PYTHON_LIBRARY libpython${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}m HINT ${PYTHON_LIBRARY_DIR}\x86_64-linux-gnu CACHE FILE)
+	find_library(PYTHON_LIBRARY libpython${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}m HINT ${PYTHON_LIBRARY_DIR}/x86_64-linux-gnu CACHE FILE)
 endif()
 
 # find numpy
