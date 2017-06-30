@@ -119,17 +119,39 @@ static PyObject* Symmetry_qu_wrapper(PySymmetry* self, PyObject* args, PyObject*
 	// PyArrayObject* input1 = (PyArrayObject*)PyArray_FROM_OTF(q1, NPY_QUAT, NPY_ARRAY_IN_ARRAY);//OTF seems to crash if passed an array of NPY_FLOAT64
 	// PyArrayObject* input2 = (PyArrayObject*)PyArray_FROM_OTF(q2, NPY_QUAT, NPY_ARRAY_IN_ARRAY);//OTF seems to crash if passed an array of NPY_FLOAT64
 	PyArrayObject* input1 = (PyArrayObject*)PyArray_FROM_OF(q1, NPY_ARRAY_IN_ARRAY);
-	if(input1 == NULL || NPY_QUAT != PyArray_TYPE(input1)) {
-		PyErr_SetString(PyExc_ValueError, "the first argument must be an aligned array of quaternions");
+	if(input1 == NULL) {
+		PyErr_SetString(PyExc_ValueError, "first input must be aligned");
 		Py_XDECREF(input1);
 		return NULL;
 	}
+	if(PyArray_TYPE(input1) == NPY_FLOAT64) {
+			input1 = (PyArrayObject*)double2object(NULL, PyTuple_Pack(1, input1), PyTuple_Pack(1, Py_BuildValue("s", "array")));
+	} else if(PyArray_TYPE(input1) == NPY_OBJECT) {
+			input1 = (PyArrayObject*)PyArray_FROM_OTF(q1, NPY_QUAT, NPY_ARRAY_IN_ARRAY);
+	} else if(PyArray_TYPE(input1) == NPY_QUAT) {
+	} else {
+			PyErr_SetString(PyExc_ValueError, "first input must be convertable to array fo quaternions");
+			Py_XDECREF(input1);
+			return NULL;
+	}
+
 	PyArrayObject* input2 = (PyArrayObject*)PyArray_FROM_OF(q2, NPY_ARRAY_IN_ARRAY);
-	if(input2 == NULL || NPY_QUAT != PyArray_TYPE(input2)) {
-		PyErr_SetString(PyExc_ValueError, "the second argument must be an aligned array of quaternions");
+	if(input2 == NULL) {
+		PyErr_SetString(PyExc_ValueError, "first input must be aligned");
 		Py_XDECREF(input2);
 		return NULL;
 	}
+	if(PyArray_TYPE(input2) == NPY_FLOAT64) {
+			input2 = (PyArrayObject*)double2object(NULL, PyTuple_Pack(1, input2), PyTuple_Pack(1, Py_BuildValue("s", "array")));
+	} else if(PyArray_TYPE(input2) == NPY_OBJECT) {
+			input2 = (PyArrayObject*)PyArray_FROM_OTF(q2, NPY_QUAT, NPY_ARRAY_IN_ARRAY);
+	} else if(PyArray_TYPE(input2) == NPY_QUAT) {
+	} else {
+			PyErr_SetString(PyExc_ValueError, "first input must be convertable to array fo quaternions");
+			Py_XDECREF(input2);
+			return NULL;
+	}
+	
 	int ndims1 = PyArray_NDIM(input1);
 	int ndims2 = PyArray_NDIM(input2);
 	npy_intp* dims1 = PyArray_DIMS(input1);
