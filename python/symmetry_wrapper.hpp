@@ -116,15 +116,17 @@ static PyObject* Symmetry_qu_wrapper(PySymmetry* self, PyObject* args, PyObject*
 	if(!PyArg_ParseTupleAndKeywords(args, kwds, "OO", const_cast<char**>(kwlist), &q1, &q2)) return NULL;
 
 	//attempt to convert both arguments to numpy arrays
-	PyArrayObject* input1 = (PyArrayObject*)PyArray_FROM_OTF(q1, NPY_QUAT, NPY_ARRAY_IN_ARRAY);
-	PyArrayObject* input2 = (PyArrayObject*)PyArray_FROM_OTF(q2, NPY_QUAT, NPY_ARRAY_IN_ARRAY);
-	if(input1 == NULL) {
-		PyErr_SetString(PyExc_ValueError, "this function requires 2 Quaternion arguments");
+	// PyArrayObject* input1 = (PyArrayObject*)PyArray_FROM_OTF(q1, NPY_QUAT, NPY_ARRAY_IN_ARRAY);//OTF seems to crash if passed an array of NPY_FLOAT64
+	// PyArrayObject* input2 = (PyArrayObject*)PyArray_FROM_OTF(q2, NPY_QUAT, NPY_ARRAY_IN_ARRAY);//OTF seems to crash if passed an array of NPY_FLOAT64
+	PyArrayObject* input1 = (PyArrayObject*)PyArray_FROM_OF(q1, NPY_ARRAY_IN_ARRAY);
+	if(input1 == NULL || NPY_QUAT != PyArray_TYPE(input1)) {
+		PyErr_SetString(PyExc_ValueError, "the first argument must be an aligned array of quaternions");
 		Py_XDECREF(input1);
 		return NULL;
 	}
-	if(input2 == NULL) {
-		PyErr_SetString(PyExc_ValueError, "this function requires 2 Quaternion arguments");
+	PyArrayObject* input2 = (PyArrayObject*)PyArray_FROM_OF(q2, NPY_ARRAY_IN_ARRAY);
+	if(input2 == NULL || NPY_QUAT != PyArray_TYPE(input2)) {
+		PyErr_SetString(PyExc_ValueError, "the second argument must be an aligned array of quaternions");
 		Py_XDECREF(input2);
 		return NULL;
 	}
