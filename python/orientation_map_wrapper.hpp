@@ -116,14 +116,16 @@ static PyObject* Py_WriteTif(PyObject* self, PyObject* args, PyObject* kwds) {
 		default:
 			Py_XDECREF(input);
 			PyErr_SetString(PyExc_ValueError, "input type must be (un)signed 8/16/32/64 bit integer or float/double");
-			return NULL;
 	}
+	return NULL;
 }
 
-static_assert(std::is_same<size_t, std::uint32_t>::value || std::is_same<size_t, std::uint64_t>::value, "could not determine numpy type for size_t");
+//on 64 mac gcc std::is_same<size_t, uint64_t>::value is false even though both are unsigned 64 bit integers
+static_assert(4 == sizeof(size_t) || 8 == sizeof(size_t), "size_t must be 32 or 64 bit");
+static_assert(!std::is_signed<size_t>::value, "size_t must be unsigned");
 static const int NPY_SIZET =
-	 std::is_same<size_t, std::uint32_t>::value ? NPY_UINT32 :
-	(std::is_same<size_t, std::uint64_t>::value ? NPY_UINT64 : NPY_NOTYPE);
+	 4 == sizeof(size_t) ? NPY_UINT32 :
+	(8 == sizeof(size_t) ? NPY_UINT64 : NPY_NOTYPE);
 
 typedef struct {
 	PyObject_HEAD
