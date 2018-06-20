@@ -83,17 +83,17 @@ class Symmetry {
 };
 
 //only centrosymmetric (Laue) groups are implemented
-template <typename T> class CubicSymmetry;//m-3m
-template <typename T> class CubicLowSymmetry;//m-3
-template <typename T> class HexagonalSymmetry;//6/mmm
-template <typename T> class HexagonalLowSymmetry;//6/m
-template <typename T> class TetragonalSymmetry;//4/mmm
+template <typename T> class CubicSymmetry;        //m-3m
+template <typename T> class CubicLowSymmetry;     //m-3
+template <typename T> class HexagonalSymmetry;    //6/mmm
+template <typename T> class HexagonalLowSymmetry; //6/m
+template <typename T> class TetragonalSymmetry;   //4/mmm
 template <typename T> class TetragonalLowSymmetry;//4/m
-template <typename T> class TrigonalSymmetry;//-3m
-template <typename T> class TrigonalLowSymmetry;//-3
-template <typename T> class OrthorhombicSymmetry;//mmm
-template <typename T> class MonoclinicSymmetry;//2/m
-template <typename T> class TriclinicSymmetry;//-1
+template <typename T> class TrigonalSymmetry;     //-3m
+template <typename T> class TrigonalLowSymmetry;  //-3
+template <typename T> class OrthorhombicSymmetry; //mmm
+template <typename T> class MonoclinicSymmetry;   //2/m
+template <typename T> class TriclinicSymmetry;    //-1
 
 namespace symmetry {
 	template <typename T>
@@ -135,18 +135,6 @@ namespace symmetry {
 		static const std::vector<Quaternion<T> > monoclinic;
 		static const std::vector<Quaternion<T> > triclinic;
 	};
-
-	template<typename T, size_t N> struct NFoldConstants {};
-	template<typename T> struct NFoldConstants<T, 2> {static const T vFz; static const T vMw;};
-	template<typename T> struct NFoldConstants<T, 3> {static const T vFz; static const T vMw;};
-	template<typename T> struct NFoldConstants<T, 4> {static const T vFz; static const T vMw;};
-	template<typename T> struct NFoldConstants<T, 6> {static const T vFz; static const T vMw;};
-
-	template<typename T, size_t N> struct DihedralConstants {};
-	template<typename T> struct DihedralConstants<T, 2> {static const T k; static const T kx;};
-	template<typename T> struct DihedralConstants<T, 3> {static const T k; static const T kx;};
-	template<typename T> struct DihedralConstants<T, 4> {static const T k; static const T kx;};
-	template<typename T> struct DihedralConstants<T, 6> {static const T k; static const T kx;};
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -154,10 +142,24 @@ namespace symmetry {
 ////////////////////////////////////////////////////////////////////////////////////
 template <typename T, size_t N>
 class NFoldSymmetry : public Symmetry<T> {
-	static const T kFz, kMw;
-	T minFzW() const {return kMw;}
+	T minFzW() const {
+		static const T kMw2 = T(1) / std::sqrt(T(2));                                 //cos(pi/4 )
+		static const T kMw3 = std::sqrt(T(3)) / T(2);                                 //cos(pi/6 )
+		static const T kMw4 = std::sqrt(T(2) + std::sqrt(T(2)) ) / T(2);              //cos(pi/8 )
+		static const T kMw6 = ( T(1) + std::sqrt(T(3)) ) / ( T(2) * std::sqrt(T(2)) );//cos(pi/12)
+		static const T kMw = (N == 2 ? kMw2 : (N == 3 ? kMw3 : (N == 4 ? kMw4 : (N == 6 ? kMw6 : 0))));//select constant based on N
+		return kMw;
+	}
+
 	public:
-		bool roInFz(T const * const ro) const {return std::fabs(ro[2] * ro[3]) <= kFz;}//top and bottom faces z = +/-tan(pi/(2n))
+		bool roInFz(T const * const ro) const {
+			static const T kFz2 = T(1);                  //tan(pi/4 )
+			static const T kFz3 = T(1) / std::sqrt(T(3));//tan(pi/6 )
+			static const T kFz4 = std::sqrt(T(2)) - T(1);//tan(pi/8 )
+			static const T kFz6 = T(2) - std::sqrt(T(3));//tan(pi/12)
+			static const T kFz = (N == 2 ? kFz2 : (N == 3 ? kFz3 : (N == 4 ? kFz4 : (N == 6 ? kFz6 : 0))));//select constant based on N
+			return std::fabs(ro[2] * ro[3]) <= kFz;//top and bottom faces z = +/-tan(pi/(2n))
+		}
 };
 
 template <typename T, size_t N>
@@ -173,7 +175,6 @@ class CyclicSymmetry : public NFoldSymmetry<T, N> {
 
 template <typename T, size_t N>
 class DihedralSymmetry : public NFoldSymmetry<T, N> {
-	static const T kFz, kFzX;
 	public:
 		bool roInFz(T const * const ro) const {
 			if(!NFoldSymmetry<T, N>::roInFz(ro)) return false;
@@ -183,6 +184,16 @@ class DihedralSymmetry : public NFoldSymmetry<T, N> {
 			T y = std::fabs(ro[1] * ro[3]);
 			if(y > x) std::swap(x, y);
 			if(x > T(1)) return false;
+			static const T kFz2  = T(0);
+			static const T kFz3  = (T(1) + std::sqrt(T(2))) * (T(1) - T(1) / std::sqrt(T(3)));
+			static const T kFz4  = std::sqrt(T(2));
+			static const T kFz6  = (T(1) + std::sqrt(T(2))) * (std::sqrt(T(3)) - T(1));
+			static const T kFzX2 = T(1);
+			static const T kFzX3 = T(-1) - std::sqrt(T(2)) + ( T(2) + std::sqrt(T(2)) ) / std::sqrt(T(3));
+			static const T kFzX4 = T(-1);
+			static const T kFzX6 = std::sqrt(T(2)) + T(3) - std::sqrt(T(3)) * ( T(2) + std::sqrt(T(2)) );
+			static const T kFz  = (N == 2 ? kFz2  : (N == 3 ? kFz3  : (N == 4 ? kFz4  : (N == 6 ? kFz6  : 0))));//select constant based on N
+			static const T kFzX = (N == 2 ? kFzX2 : (N == 3 ? kFzX3 : (N == 4 ? kFzX4 : (N == 6 ? kFzX6 : 0))));//select constant based on N
 			return y <= kFz + kFzX * x;//y <= (1+sqrt(2))*(1-t) + ((2+sqrt(2))*t - (1+sqrt(2))) * x
 		}
 
@@ -509,27 +520,5 @@ template <typename T> const std::vector<Quaternion<T> > symmetry::operators<T>::
 template <typename T> const std::vector<Quaternion<T> > symmetry::operators<T>::monoclinic    = std::vector<Quaternion<T> >(symmetry::operators<T>::orthorhombic.begin(), symmetry::operators<T>::orthorhombic.begin()  + 2);
 
 template <typename T> const std::vector<Quaternion<T> > symmetry::operators<T>::triclinic = {Quaternion<T>(T(1), T(0), T(0), T(0))};
-
-template <typename T> const T symmetry::NFoldConstants<T, 2>::vFz = T(1);                                                   //tan(pi/4 )
-template <typename T> const T symmetry::NFoldConstants<T, 3>::vFz = T(1) / std::sqrt(T(3));                                 //tan(pi/6 )
-template <typename T> const T symmetry::NFoldConstants<T, 4>::vFz = std::sqrt(T(2)) - T(1);                                 //tan(pi/8 )
-template <typename T> const T symmetry::NFoldConstants<T, 6>::vFz = T(2) - std::sqrt(T(3));                                 //tan(pi/12)
-template <typename T> const T symmetry::NFoldConstants<T, 2>::vMw = T(1) / std::sqrt(T(2));                                 //cos(pi/4 )
-template <typename T> const T symmetry::NFoldConstants<T, 3>::vMw = std::sqrt(T(3)) / T(2);                                 //cos(pi/6 )
-template <typename T> const T symmetry::NFoldConstants<T, 4>::vMw = std::sqrt(T(2) + std::sqrt(T(2)) ) / T(2);              //cos(pi/8 )
-template <typename T> const T symmetry::NFoldConstants<T, 6>::vMw = ( T(1) + std::sqrt(T(3)) ) / ( T(2) * std::sqrt(T(2)) );//cos(pi/12)
-template <typename T, size_t N> const T NFoldSymmetry<T, N>::kFz = symmetry::NFoldConstants<T,N>::vFz;
-template <typename T, size_t N> const T NFoldSymmetry<T, N>::kMw = symmetry::NFoldConstants<T,N>::vMw;
-
-template <typename T> const T symmetry::DihedralConstants<T, 2>::k = T(0);
-template <typename T> const T symmetry::DihedralConstants<T, 3>::k = (T(1) + std::sqrt(T(2))) * (T(1) - T(1) / std::sqrt(T(3)));
-template <typename T> const T symmetry::DihedralConstants<T, 4>::k = std::sqrt(T(2));
-template <typename T> const T symmetry::DihedralConstants<T, 6>::k = (T(1) + std::sqrt(T(2))) * (std::sqrt(T(3)) - T(1));
-template <typename T> const T symmetry::DihedralConstants<T, 2>::kx = T(1);
-template <typename T> const T symmetry::DihedralConstants<T, 3>::kx = T(-1) - std::sqrt(T(2)) + ( T(2) + std::sqrt(T(2)) ) / std::sqrt(T(3));
-template <typename T> const T symmetry::DihedralConstants<T, 4>::kx = T(-1);
-template <typename T> const T symmetry::DihedralConstants<T, 6>::kx = std::sqrt(T(2)) + T(3) - std::sqrt(T(3)) * ( T(2) + std::sqrt(T(2)) );
-template <typename T, size_t N> const T DihedralSymmetry<T, N>::kFz  = symmetry::DihedralConstants<T,N>::k;
-template <typename T, size_t N> const T DihedralSymmetry<T, N>::kFzX = symmetry::DihedralConstants<T,N>::kx;
 
 #endif//_symmetry_h_
