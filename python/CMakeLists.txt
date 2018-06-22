@@ -65,7 +65,7 @@ else()
 		message(FATAL_ERROR "failed to find python include directory: ${Python_Error}")
 	endif()
 	set(PYTHON_LIBRARY_DIR ${Python_Output} CACHE PATH "python library directories")
-	find_library(PYTHON_LIBRARY libpython${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}m HINT ${PYTHON_LIBRARY_DIR}/x86_64-linux-gnu CACHE FILE)
+	find_library(PYTHON_LIBRARY libpython${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}m.dylib HINTS ${PYTHON_LIBRARY_DIR} CACHE FILE)
 endif()
 
 # find numpy
@@ -92,9 +92,9 @@ else()
 endif()
 
 # add install rule to put python module in python path
-if(WIN32)
-	get_filename_component(PYTHON_DIR ${PYTHON_EXECUTABLE} DIRECTORY)
-	install(TARGETS crystallography LIBRARY DESTINATION ${PYTHON_DIR}/Lib/site-packages)
-else()
-	install(TARGETS crystallography LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR})
+execute_process(COMMAND ${PYTHON_EXECUTABLE} "-c" "from distutils import sysconfig;print(sysconfig.get_python_lib(),end='')" OUTPUT_VARIABLE Python_Output ERROR_VARIABLE Python_Error)
+if(NOT "${Python_Error}" STREQUAL "")
+	message(FATAL_ERROR "failed to find python include directory: ${Python_Error}")
 endif()
+set(PYTHON_MODULE_DIR ${Python_Output} CACHE PATH "python module install directory")
+install(TARGETS crystallography LIBRARY DESTINATION ${PYTHON_MODULE_DIR})
