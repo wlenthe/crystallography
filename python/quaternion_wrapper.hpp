@@ -368,11 +368,11 @@ static void Quaternion_member_ufunc(char** args, npy_intp* dimensions, npy_intp*
  const npy_intp destStride = strides[1];
  const npy_intp n = dimensions[0];
  for(npy_intp i = 0; i < n; i++)
-	*((Quaternion<double>*)(dest+i*destStride)) = (((Quaternion<double>*)(source+sourceStride))->*f)();
+	*((Quaternion<double>*)(dest+i*destStride)) = (((Quaternion<double>*)(source+i*sourceStride))->*f)();
 }
 static void Quaternion_conj_ufunc(char** args, npy_intp* dimensions, npy_intp* strides, void* innerloopdata) {return Quaternion_member_ufunc(args, dimensions, strides, innerloopdata, &Quaternion<double>::conjugate);}
-static void Quaternion_inv_ufunc(char** args, npy_intp* dimensions, npy_intp* strides, void* innerloopdata) {return Quaternion_member_ufunc(args, dimensions, strides, innerloopdata, &Quaternion<double>::inverse);}
-static void Quaternion_neg_ufunc(char** args, npy_intp* dimensions, npy_intp* strides, void* innerloopdata) {return Quaternion_member_ufunc(args, dimensions, strides, innerloopdata, &Quaternion<double>::operator-);}
+static void Quaternion_inv_ufunc (char** args, npy_intp* dimensions, npy_intp* strides, void* innerloopdata) {return Quaternion_member_ufunc(args, dimensions, strides, innerloopdata, &Quaternion<double>::inverse);}
+static void Quaternion_neg_ufunc (char** args, npy_intp* dimensions, npy_intp* strides, void* innerloopdata) {return Quaternion_member_ufunc(args, dimensions, strides, innerloopdata, &Quaternion<double>::operator-);}
 
 //wrapper for binary operators
 static void Quaternion_binary_ufunc(char** args, npy_intp* dimensions, npy_intp* strides, void* innerloopdata, Quaternion<double>(Quaternion<double>::*f)(const Quaternion<double>&)const) {
@@ -384,7 +384,7 @@ static void Quaternion_binary_ufunc(char** args, npy_intp* dimensions, npy_intp*
  const npy_intp destStride = strides[2];
  const npy_intp n = dimensions[0];
  for(npy_intp i = 0; i < n; i++)
-	*((Quaternion<double>*)(dest+i*destStride)) = (((Quaternion<double>*)(source1+source1Stride))->*f)(*((Quaternion<double>*)(source2+source2Stride)));
+	*((Quaternion<double>*)(dest+i*destStride)) = (((Quaternion<double>*)(source1+i*source1Stride))->*f)(*((Quaternion<double>*)(source2+i*source2Stride)));
 }
 static void Quaternion_mul_ufunc(char** args, npy_intp* dimensions, npy_intp* strides, void* innerloopdata) {return Quaternion_binary_ufunc(args, dimensions, strides, innerloopdata, &Quaternion<double>::operator*);}
 
@@ -398,7 +398,7 @@ static void Quaternion_cmp_ufunc(char** args, npy_intp* dimensions, npy_intp* st
  const npy_intp destStride = strides[2];
  const npy_intp n = dimensions[0];
  for(npy_intp i = 0; i < n; i++)
-	*((bool*)(dest+i*destStride)) = (((Quaternion<double>*)(source1+source1Stride))->*f)(*((Quaternion<double>*)(source2+source2Stride)));
+	*((bool*)(dest+i*destStride)) = (((Quaternion<double>*)(source1+i*source1Stride))->*f)(*((Quaternion<double>*)(source2+i*source2Stride)));
 }
 static void Quaternion_eq_ufunc(char** args, npy_intp* dimensions, npy_intp* strides, void* innerloopdata) {return Quaternion_cmp_ufunc(args, dimensions, strides, innerloopdata, &Quaternion<double>::operator==);}
 static void Quaternion_ne_ufunc(char** args, npy_intp* dimensions, npy_intp* strides, void* innerloopdata) {return Quaternion_cmp_ufunc(args, dimensions, strides, innerloopdata, &Quaternion<double>::operator!=);}
@@ -477,9 +477,9 @@ static int Quaternion_registerNumpy() {
 	urnaryArgs[0] = NPY_QUAT;
 	urnaryArgs[1] = NPY_QUAT;
 	PyObject* ufuncDict = PyModule_GetDict(PyImport_ImportModule("numpy"));
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "conjugate"), NPY_QUAT, Quaternion_conj_ufunc, urnaryArgs, NULL);
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "reciprocal"), NPY_QUAT, Quaternion_inv_ufunc, urnaryArgs, NULL);
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "negative"), NPY_QUAT, Quaternion_neg_ufunc, urnaryArgs, NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "conjugate") , NPY_QUAT, Quaternion_conj_ufunc, urnaryArgs, NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "reciprocal"), NPY_QUAT, Quaternion_inv_ufunc , urnaryArgs, NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "negative")  , NPY_QUAT, Quaternion_neg_ufunc , urnaryArgs, NULL);
 
 	int binaryArgs[3];
 	urnaryArgs[0] = NPY_QUAT;
