@@ -473,27 +473,20 @@ static int Quaternion_registerNumpy() {
 	PyArray_RegisterCanCast(PyArray_DescrFromType(NPY_CLONGDOUBLE), NPY_QUAT, NPY_NOSCALAR);
 
 	//register ufuncs
-	int urnaryArgs[3];
-	urnaryArgs[0] = NPY_QUAT;
-	urnaryArgs[1] = NPY_QUAT;
+	int cmpArgs[3] = {NPY_QUAT, NPY_QUAT, NPY_BOOL};
 	PyObject* ufuncDict = PyModule_GetDict(PyImport_ImportModule("numpy"));
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "conjugate") , NPY_QUAT, Quaternion_conj_ufunc, urnaryArgs, NULL);
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "reciprocal"), NPY_QUAT, Quaternion_inv_ufunc , urnaryArgs, NULL);
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "negative")  , NPY_QUAT, Quaternion_neg_ufunc , urnaryArgs, NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "conjugate")    , NPY_QUAT, Quaternion_conj_ufunc, NULL   , NULL);//NULL for args -> all NPY_QUAT
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "reciprocal")   , NPY_QUAT, Quaternion_inv_ufunc , NULL   , NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "negative")     , NPY_QUAT, Quaternion_neg_ufunc , NULL   , NULL);
 
-	int binaryArgs[3];
-	urnaryArgs[0] = NPY_QUAT;
-	urnaryArgs[1] = NPY_QUAT;
-	binaryArgs[2] = NPY_QUAT;
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "multiply"), NPY_QUAT, Quaternion_mul_ufunc, binaryArgs, NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "multiply")     , NPY_QUAT, Quaternion_mul_ufunc , NULL   , NULL);
 
-	binaryArgs[2] = NPY_BOOL;
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "equal"),         NPY_QUAT, Quaternion_eq_ufunc, binaryArgs, NULL);
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "not_equal"),     NPY_QUAT, Quaternion_ne_ufunc, binaryArgs, NULL);
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "less"),          NPY_QUAT, Quaternion_lt_ufunc, binaryArgs, NULL);
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "less_equal"),    NPY_QUAT, Quaternion_le_ufunc, binaryArgs, NULL);
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "greater"),       NPY_QUAT, Quaternion_gt_ufunc, binaryArgs, NULL);
-	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "greater_equal"), NPY_QUAT, Quaternion_ge_ufunc, binaryArgs, NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "equal")        , NPY_QUAT, Quaternion_eq_ufunc  , cmpArgs, NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "not_equal")    , NPY_QUAT, Quaternion_ne_ufunc  , cmpArgs, NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "less")         , NPY_QUAT, Quaternion_lt_ufunc  , cmpArgs, NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "less_equal")   , NPY_QUAT, Quaternion_le_ufunc  , cmpArgs, NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "greater")      , NPY_QUAT, Quaternion_gt_ufunc  , cmpArgs, NULL);
+	PyUFunc_RegisterLoopForType((PyUFuncObject *)PyDict_GetItemString(ufuncDict, "greater_equal"), NPY_QUAT, Quaternion_ge_ufunc  , cmpArgs, NULL);
 	return 0;
 }
 
