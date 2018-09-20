@@ -500,7 +500,7 @@ namespace rotations{
 		T x = T(2) * std::acos(T(1) - y / T(2));//initial guess from small taylor expansion
 		y = std::sqrt(y);
 		T prevErr = Constants<T>::inf;
-		for(size_t i = 0; i < 7; i++) {
+		for(size_t i = 0; i < 16; i++) {
 			const T fx = std::pow(T(3) * (x - std::sin(x)) / T(4), T(1) / T(3));//compute forward value
 			const T delta = fx - y;//compute error
 			const T err = std::fabs(delta);
