@@ -47,10 +47,12 @@
 #include "symmetry.hpp"
 
 #include "tsl.hpp"
+#include "oxford.hpp"
 
 template <typename T>
 class OrientationMap {
-	void readTSL(std::string fileName);
+	void readTSL   (std::string fileName);
+	void readOxford(std::string fileName);
 	public:
 		//pixel array are stored in row major order with a normal cartesian coordinate system (not an image coordinate system)
 		//keep shared pointers for pixel level arrays to avoid copying
@@ -93,7 +95,8 @@ OrientationMap<T>::OrientationMap(std::string fileName) :
 	phases(std::make_shared< std::vector<size_t> >()),
 	quality(std::make_shared< std::vector<T> >()),
 	rows(0), cols(0), xRes(1), yRes(1) {
-	if(TSL<T>::CanReadFile(fileName)) readTSL(fileName);
+	if     (TSL   <T>::CanReadFile(fileName)) readTSL   (fileName);
+	else if(Oxford<T>::CanReadFile(fileName)) readOxford(fileName);
 	else throw std::invalid_argument("no readers available for file type");
 }
 
@@ -111,6 +114,31 @@ void OrientationMap<T>::readTSL(std::string fileName) {
 	//take scan data data
 	phases->swap(file.phases);
 	quality->swap(file.iq);
+
+	//convert from eulers to quats
+	quats->resize(phases->size());
+	for(size_t i = 0; i < quats->size(); i++) rotations::eu2qu(file.eulers.data()+3*i, quats->operator[](i).data());
+}
+
+template <typename T>
+void OrientationMap<T>::readOxford(std::string fileName) {
+	//read tsl file and copy metadata
+	Oxford<T> file(fileName);
+	cols = file.xCells;
+	rows = file.yCells;
+	xRes = file.xStep;
+	yRes = file.yStep;
+	syms = file.getSymmetries();
+	if(1 != file.zCells) throw std::runtime_error("3D ctf's are not supported (consider using DREAM.3D for 3D EBSD data)");
+
+	//take scan data data
+	phases->swap(file.phases);
+	if(std::all_of(file.error.begin(), file.error.end(), [](const T& v){return v==0;}))
+		quality->swap(file.mad);//fall back to MAD if error is empty
+	else
+		quality->swap(file.error);//default to error for quality
+
+	
 
 	//convert from eulers to quats
 	quats->resize(phases->size());
