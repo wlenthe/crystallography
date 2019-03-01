@@ -117,7 +117,7 @@ static PyObject* Py_WriteTif(PyObject* self, PyObject* args, PyObject* kwds) {
 			Py_XDECREF(input);
 			PyErr_SetString(PyExc_ValueError, "input type must be (un)signed 8/16/32/64 bit integer or float/double");
 	}
-	return NULL;
+	return Py_None;
 }
 
 //on 64 mac gcc std::is_same<size_t, uint64_t>::value is false even though both are unsigned 64 bit integers
