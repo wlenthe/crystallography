@@ -33,6 +33,3 @@
 # add tests
 add_executable(rotations_test rotations_test.cpp)
 set_property(TARGET rotations_test PROPERTY CXX_STANDARD 11)
-
-add_executable(ipf_test ipf_test.cpp)
-set_property(TARGET ipf_test PROPERTY CXX_STANDARD 11)
