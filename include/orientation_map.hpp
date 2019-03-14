@@ -47,12 +47,12 @@
 #include "symmetry.hpp"
 
 #include "tsl.hpp"
-#include "oxford.hpp"
+#include "hkl.hpp"
 
 template <typename T>
 class OrientationMap {
-	void readTSL   (std::string fileName);
-	void readOxford(std::string fileName);
+	void readTSL(std::string fileName);
+	void readHKL(std::string fileName);
 	public:
 		//pixel array are stored in row major order with a normal cartesian coordinate system (not an image coordinate system)
 		//keep shared pointers for pixel level arrays to avoid copying
@@ -95,8 +95,8 @@ OrientationMap<T>::OrientationMap(std::string fileName) :
 	phases(std::make_shared< std::vector<size_t> >()),
 	quality(std::make_shared< std::vector<T> >()),
 	rows(0), cols(0), xRes(1), yRes(1) {
-	if     (TSL   <T>::CanReadFile(fileName)) readTSL   (fileName);
-	else if(Oxford<T>::CanReadFile(fileName)) readOxford(fileName);
+	if     (TSL<T>::CanReadFile(fileName)) readTSL(fileName);
+	else if(HKL<T>::CanReadFile(fileName)) readHKL(fileName);
 	else throw std::invalid_argument("no readers available for file type");
 }
 
@@ -121,9 +121,9 @@ void OrientationMap<T>::readTSL(std::string fileName) {
 }
 
 template <typename T>
-void OrientationMap<T>::readOxford(std::string fileName) {
+void OrientationMap<T>::readHKL(std::string fileName) {
 	//read tsl file and copy metadata
-	Oxford<T> file(fileName);
+	HKL<T> file(fileName);
 	cols = file.xCells;
 	rows = file.yCells;
 	xRes = file.xStep;

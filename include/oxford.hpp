@@ -29,8 +29,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.            *
  *                                                                                 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-#ifndef _oxford_h_
-#define _oxford_h_
+#ifndef _HKL_H_
+#define _HKL_H_
 
 #include <vector>
 #include <string>
@@ -66,7 +66,7 @@ namespace ctf {
 }
 
 template <typename T>
-class Oxford {
+class HKL {
 	public:
 		std::string project, author, jobMode;
 		size_t xCells, yCells, zCells;
@@ -80,7 +80,7 @@ class Oxford {
 		std::vector<T> x, y, error, eulers, mad;
 		std::vector<size_t> phases, bands, bc, bs;
 
-		Oxford(std::string fileName);
+		HKL(std::string fileName);
 		static bool CanReadFile(std::string fileName) {return CanReadExtension(GetExtension(fileName));}
 		std::vector<Symmetry<T> const *> getSymmetries();//convert phase list from laue groups to symmetry pointers
 
@@ -106,7 +106,7 @@ class Oxford {
 };
 
 template <typename T>
-Oxford<T>::Oxford(std::string fileName) {
+HKL<T>::HKL(std::string fileName) {
 	size_t pos = fileName.find_last_of(".");
 	if(std::string::npos == pos) {
 		throw std::runtime_error("file name " + fileName + " has no extension");
@@ -145,7 +145,7 @@ Oxford<T>::Oxford(std::string fileName) {
 }
 
 template <typename T>
-std::vector<Symmetry<T> const *> Oxford<T>::getSymmetries() {
+std::vector<Symmetry<T> const *> HKL<T>::getSymmetries() {
 	std::vector<Symmetry<T> const *> syms(phaseList.size());
 	for(size_t i = 0; i < phaseList.size(); i++) {
 		switch(phaseList[i].laueGroup) {
@@ -171,7 +171,7 @@ std::vector<Symmetry<T> const *> Oxford<T>::getSymmetries() {
 }
 
 template <typename T>
-size_t Oxford<T>::readCtf(std::string fileName) {
+size_t HKL<T>::readCtf(std::string fileName) {
 	//parse header
 	std::ifstream is(fileName.c_str());//open file
 	if(!is) throw std::runtime_error("ctf file " + fileName + " doesn't exist");
@@ -209,7 +209,7 @@ size_t Oxford<T>::readCtf(std::string fileName) {
 }
 
 template <typename T>
-std::vector<ctf::ColumnType> Oxford<T>::readCtfHeader(std::istream& is) {
+std::vector<ctf::ColumnType> HKL<T>::readCtfHeader(std::istream& is) {
 	char line[512];
 	std::string token;
 	bool readProject   = false, readAuthor    = false, readJobMode  = false;
@@ -326,7 +326,7 @@ std::vector<ctf::ColumnType> Oxford<T>::readCtfHeader(std::istream& is) {
 }
 
 template <typename T>
-size_t Oxford<T>::readCtfData(std::istream& is, const std::vector<ctf::ColumnType>& columns) {
+size_t HKL<T>::readCtfData(std::istream& is, const std::vector<ctf::ColumnType>& columns) {
 	//check if the columns are in the normal layout
 	const ctf::ColumnType defaultLayout[11] = {
 		ctf::ColumnType::Phase ,
@@ -400,8 +400,8 @@ size_t Oxford<T>::readCtfData(std::istream& is, const std::vector<ctf::ColumnTyp
 }
 
 template <typename T>
-size_t Oxford<T>::readCtfDataMemMap(std::string fileName, std::streamoff offset, const std::vector<ctf::ColumnType>& columns) {
+size_t HKL<T>::readCtfDataMemMap(std::string fileName, std::streamoff offset, const std::vector<ctf::ColumnType>& columns) {
 	throw std::runtime_error("not yet implemented for unix");
 }
 
-#endif//_oxford_h_
+#endif//_HKL_H_
