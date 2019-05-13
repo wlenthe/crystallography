@@ -41,6 +41,7 @@
 #include <vector>
 #include <algorithm>
 #include <numeric>
+#include <functional>
 
 namespace coloring {
 	template <typename T>

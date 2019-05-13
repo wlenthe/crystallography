@@ -33,6 +33,7 @@ cmake_minimum_required(VERSION 3.1)
 
 if(MSVC)
 	add_definitions(-D_SCL_SECURE_NO_WARNINGS) # silence visual studio security warnings
+	add_definitions(-D_USE_MATH_DEFINES) # M_PI
 endif()
 
 # add include folder

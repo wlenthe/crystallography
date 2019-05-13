@@ -64,7 +64,7 @@ void hemiLegend(std::string fileName, const size_t dim, void (*ipfFunc)(double c
 	}
 
 	//write image
-	writeTif(buff.data(), dim, dim, fileName, 4);
+	writeTif(buff.data(), (int32_t)dim, (int32_t)dim, fileName, 4);
 }
 
 int main() {
